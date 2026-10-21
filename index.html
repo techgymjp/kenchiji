@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>県知事になろう</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="game">
+  <div id="screen">
+    <canvas id="cv" width="272" height="208"></canvas>
+    <div id="status" class="win hidden"></div>
+    <div id="areaLabel" class="win hidden"></div>
+    <div id="msg" class="win hidden"><div id="msgText"></div><div id="msgNext">▼</div></div>
+    <div id="choice" class="win hidden"></div>
+    <div id="panel" class="win hidden"></div>
+    <div id="banner" class="hidden"></div>
+    <div id="fade"></div>
+    <div id="title">
+      <div class="title-inner">
+        <div class="title-sub">ひなた県知事選挙</div>
+        <h1>県知事に<br>なろう</h1>
+        <div class="title-desc">17日間の選挙戦を かけぬけろ！</div>
+        <div id="titleMenu" class="win"></div>
+        <div class="title-help">移動：矢印/WASD　決定：Z/Enter/Space　メニュー：X/Esc</div>
+      </div>
+    </div>
+  </div>
+  <div id="pad">
+    <div class="dpad">
+      <button data-k="up" class="up">▲</button>
+      <button data-k="left" class="left">◀</button>
+      <button data-k="right" class="right">▶</button>
+      <button data-k="down" class="down">▼</button>
+    </div>
+    <div class="ab">
+      <button data-k="b" class="b">B<small>メニュー</small></button>
+      <button data-k="a" class="a">A<small>しらべる</small></button>
+    </div>
+  </div>
+</div>
+<script src="js/sprites.js"></script>
+<script src="js/map.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/events.js"></script>
+<script src="js/election.js"></script>
+<script src="js/engine.js"></script>
+</body>
+</html>
