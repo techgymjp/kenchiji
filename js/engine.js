@@ -156,12 +156,23 @@ async function runEvent(fn) {
   }
   UI.closeMsg();
   updateStatus();
+  if (G.scene === 'field') BGM.play(fieldTrack());
   running = false;
 }
+
+// フィールドの曲（夕方からは夜の曲）
+function fieldTrack() {
+  return G.min >= 17 * 60 ? 'evening' : 'field';
+}
+
+// 後から届く悪い知らせ
+const BAD_NEWS = new Set(['d_affair', 'd_bribe', 'd_stealth', 'd_drunk_gaffe', 'd_yakuza', 'd_ryotei',
+  'd_poster_misread', 'd_celeb', 'd_cult', 'd_angry_clip', 'd_dam', 'd_cold']);
 
 async function checkDayEnd() {
   if (G.scene !== 'field') return;
   if (G.hp <= 0) {
+    BGM.play('trouble');
     Sound.bad();
     await UI.say('{N}は ふらふらと よろめいた…', 'バタッ！', '{N}は 過労で 倒れてしまった！', '…気がつくと 病院の ベッドの上だった。', 'スタッフ「今日は もう 休んでください！」');
     G.collapsed = true;
@@ -192,7 +203,7 @@ function starStr(n) {
 async function nightSequence() {
   G.scene = 'night';
   UI.closeMsg();
-  Sound.night();
+  BGM.play('night');
   await UI.fadeOut();
   let h = `<h2>${G.day}日目　終了</h2>`;
   const g = G.dayGain;
@@ -255,6 +266,7 @@ async function nightSequence() {
   save();
   updateStatus();
   updateArea(true);
+  BGM.play('town');
   await UI.fadeIn();
   await morning();
 }
@@ -267,7 +279,9 @@ async function morning() {
   G.pending = G.pending.filter(p => p.day > G.day);
   for (const p of due) {
     if (DELAYED[p.id]) {
+      if (BAD_NEWS.has(p.id)) BGM.play('trouble');
       await DELAYED[p.id](makeX('chuo'));
+      BGM.play('town');
     }
   }
   // 今日の予定
@@ -402,6 +416,7 @@ function onStep() {
   if (G.steps % 12 === 0) G.hp = Math.max(0, G.hp - 1);
   updateStatus();
   updateArea();
+  if (!running) BGM.play(fieldTrack());
   const b = MAP.doorAt[`${G.x},${G.y}`];
   if (b) {
     runEvent(async () => {
@@ -426,6 +441,7 @@ function onStep() {
       G.once[ev.id] = true;
       G.daily.enc[ev.id] = true;
       runEvent(async () => {
+        BGM.play('event');
         Sound.encounter();
         await UI.flash(3);
         await ev.run(makeX(area));
@@ -441,6 +457,7 @@ async function enterBuilding(b) {
   if (sch) {
     if (h >= sch.from && h < sch.to) {
       G.schedDone[sch.id] = true;
+      BGM.play(sch.big ? 'debate' : 'event');
       Sound.encounter();
       await UI.flash(2);
       await SCHEDULED_EVENTS[sch.id](X);
@@ -449,6 +466,7 @@ async function enterBuilding(b) {
     if (h < sch.from) await UI.say(`今日は ここで 「${sch.title}」が ある。\nまだ 始まっていないようだ。`);
   }
   const f = FACILITIES[b.id];
+  BGM.play('town');
   if (f) await f(X);
   else await UI.say(`${b.label}だ。`);
 }
@@ -478,6 +496,7 @@ async function examine() {
     const sch = SCHEDULE.find(s => s.at === 'station' && s.day === G.day && !G.schedDone[s.id]);
     if (pd.id === 'p_chuo' && sch && G.min / 60 >= sch.from) {
       G.schedDone[sch.id] = true;
+      BGM.play('debate');
       await SCHEDULED_EVENTS[sch.id](makeX('chuo'));
       return;
     }
@@ -711,6 +730,7 @@ function titleScreen() {
     if (items[sel].disabled) { Sound.bump(); return; }
     Sound.ok();
     Input.release();
+    BGM.play('title');
     if (sel === 0) nameEntry();
     else startFromSave(saved);
   };
@@ -719,6 +739,7 @@ function titleScreen() {
     else if (k === 'a') choose();
   });
   render();
+  BGM.play('title');
 }
 
 function nameEntry() {
@@ -741,11 +762,13 @@ async function startNew(name) {
   try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ }
   await beginField();
   running = true;
+  BGM.play('town');
   try {
     await prologue();
     await UI.say('1日目の 活動 開始だ！');
   } finally {
     UI.closeMsg();
+    BGM.play(fieldTrack());
     running = false;
   }
 }
@@ -761,6 +784,7 @@ async function startFromSave(saved) {
     await UI.say(`${G.day}日目から 再開します。`);
   } finally {
     UI.closeMsg();
+    BGM.play(fieldTrack());
     running = false;
   }
 }

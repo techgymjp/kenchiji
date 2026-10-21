@@ -31,11 +31,17 @@ const Sound = (() => {
   }
   const seq = (notes, step = 0.12, type = 'square', vol = 0.05) =>
     notes.forEach((n, i) => n && tone(n, step * 0.95, type, vol, i * step));
+  // ブラウザの自動再生制限：最初の操作で音を有効にする
+  const unlock = () => { if (ctx && ctx.state === 'suspended') ctx.resume(); };
+  window.addEventListener('keydown', unlock);
+  window.addEventListener('pointerdown', unlock);
   return {
     get on() { return on; },
+    context: ac,
     toggle() {
       on = !on;
       try { localStorage.setItem('kenchiji_sound', on ? 'on' : 'off'); } catch (e) { /* ignore */ }
+      if (typeof BGM !== 'undefined') BGM.refresh();
       return on;
     },
     blip() { tone(880, 0.025, 'square', 0.015); },

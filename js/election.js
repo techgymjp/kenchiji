@@ -134,6 +134,7 @@ async function electionNight() {
     'スタッフ「テレビ、つけます！」'
   );
   UI.closeMsg();
+  BGM.play('election');
 
   const panel = document.getElementById('panel');
   panel.classList.remove('hidden');
@@ -166,6 +167,7 @@ async function electionNight() {
   if (lead >= 0.07) {
     G.decided = winner;
     render(zero(), '午後8時00分', 0, `速報　${candName(winner)}氏　当選確実`);
+    BGM.stop();
     Sound.encounter();
     await UI.showBanner(`${candName(winner)}　当選確実`, 2600);
     await UI.sleep(400);
@@ -197,6 +199,7 @@ async function electionNight() {
         G.decided = winner;
         render(done ? (() => { const c = {}; AREA_IDS.forEach(id => { c[id] = Object.assign({}, R.areas[id]); }); return c; })() : counted,
           timeStr, done ? 100 : rate, `速報　${candName(winner)}氏　当選確実`);
+        BGM.stop();
         Sound.encounter();
         await UI.showBanner(`${candName(winner)}　当選確実`, 2600);
         break;
@@ -227,7 +230,7 @@ function endingRank(R) {
 async function ending(R) {
   const win = R.order[0] === 'p';
   if (win) {
-    Sound.fanfare();
+    BGM.play('victory');
     await UI.say(
       '事務所は 割れんばかりの 歓声に つつまれた！',
       'スタッフ「やった… やりましたよ、{N}さん！！」',
@@ -243,7 +246,7 @@ async function ending(R) {
     if (G.flags.grannyHelped) epi.push('当選祝いの 花束の中に、あの おばあさんからの 手紙が あった。「やっぱり あんたは いい人だった」');
     if (epi.length) await UI.say(...epi);
   } else {
-    Sound.night();
+    BGM.play('defeat');
     const w = R.order[0];
     await UI.say(
       '事務所は 静まりかえった…',
