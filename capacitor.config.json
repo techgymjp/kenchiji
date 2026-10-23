@@ -1,0 +1,8 @@
+{
+  "appId": "jp.techgym.kenchiji",
+  "appName": "県知事になろう",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#000000"
+  }
+}

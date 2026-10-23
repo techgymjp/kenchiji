@@ -38,6 +38,9 @@ const Sound = (() => {
   return {
     get on() { return on; },
     context: ac,
+    // アプリの切り替え中や全画面広告の表示中は音を止める
+    suspend() { if (ctx && ctx.state === 'running') ctx.suspend(); },
+    resume() { if (ctx && on && document.visibilityState === 'visible') ctx.resume(); },
     toggle() {
       on = !on;
       try { localStorage.setItem('kenchiji_sound', on ? 'on' : 'off'); } catch (e) { /* ignore */ }

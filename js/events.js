@@ -926,8 +926,22 @@ const FACILITIES = {
     const dog = X.has('dog') ? '\n看板犬が しっぽを 振っている。' : '';
     await X.say(`{N}選挙事務所だ。スタッフが 電話かけに 追われている。${dog}`);
     while (true) {
-      const c = await X.ask(null, ['ひと休みする（1時間）', 'ポスターを 印刷する（50万円で20枚）', 'スタッフに 相談する', '今日の 活動を 終える', '出る'], { cancel: true });
-      if (c === 0) {
+      const opts = ['ひと休みする（1時間）', 'ポスターを 印刷する（50万円で20枚）', 'スタッフに 相談する', '今日の 活動を 終える', '出る'];
+      // Android アプリでは 1日1回、応援動画（リワード広告）で体力を全回復できる
+      if (Ads.available) opts.splice(4, 0, { label: '応援動画を 見る（広告・体力 全回復）', disabled: !!G.daily.adRest });
+      const c = await X.ask(null, opts, { cancel: true });
+      if (c === 4 && Ads.available) {
+        const r = await Ads.showRewarded();
+        if (r === 'rewarded') {
+          G.daily.adRest = true;
+          await X.say('支援者からの 応援動画を 見た！', '「がんばれー！」「応援してるぞ！」', '{N}は 元気が わいてきた！');
+          await X.fx({ hp: 100 });
+        } else if (r === 'skipped') {
+          await X.say('…動画を 最後まで 見なかった。');
+        } else {
+          await X.say('いまは 応援動画を 見られないようだ。\nしばらくしてから ためしてみよう。');
+        }
+      } else if (c === 0) {
         await X.say('{N}は 事務所の ソファで 仮眠を とった。');
         await X.fx({ hp: 20, time: 60 });
       } else if (c === 1) {

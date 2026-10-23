@@ -5,14 +5,13 @@
 
 ## 遊び方
 
-ビルド不要の静的サイトです。`index.html` をブラウザで開くか、ローカルサーバーで配信してください。
+Web 版はビルド不要の静的サイトです。`index.html` をブラウザで開くか、ローカルサーバーで配信してください。
 
 ```sh
 npx http-server -p 8080 .
 # → http://localhost:8080/
 ```
 
-GitHub Pages などの静的ホスティングにもそのまま置けます。
 
 | 操作 | キーボード | スマホ |
 | --- | --- | --- |
@@ -69,6 +68,90 @@ GitHub Pages などの静的ホスティングにもそのまま置けます。
 
 メニューの「おと」で効果音とBGMをまとめて ON/OFF できます。
 
+## Android 版（Google Play 配布用）
+
+[Capacitor](https://capacitorjs.com/) でゲームのファイルをアプリ内に同梱しているため、ネットにつながっていなくても遊べます（フォントも `css/fonts/` に同梱）。
+
+- 縦画面固定・全画面表示（ステータスバー／ナビゲーションバーを隠す）
+- プレイ中は画面が暗くならない
+- 画面の下に十字ボタンと A・B ボタンを常に表示
+- Android の戻るボタンは B ボタンと同じ（メニュー・キャンセル）。タイトル画面ではアプリを終了
+- 別のアプリに切り替えると音が止まり、その時点の状態を自動でセーブする
+- エンディングの「結果を シェアする」は Android の共有メニューから LINE や X などを選べる
+- 案内文はタッチ操作のボタン名で表示
+
+アプリ ID は `jp.techgym.kenchiji` です（Google Play に一度公開すると変更できません）。
+
+### 広告（Google AdMob）
+
+Android アプリでのみ広告を表示します（Web 版には広告は出ません）。
+
+| 広告 | タイミング |
+| --- | --- |
+| インタースティシャル（全画面） | 夜の報告を閉じたあと、3 日に 1 回（3・6・9・12・15 日目の夜） |
+| リワード | 過労で倒れたときに「応援動画を見て立ちあがる」を選ぶと、体力 60 で その日の活動を続けられる（1 日 1 回） |
+| リワード | 選挙事務所の「応援動画を見る」で体力が全回復（1 日 1 回） |
+
+- EU・英国など同意が必要な地域では、初回起動時に Google の同意確認画面が出ます。その地域では、タイトル画面の「広告の設定」から同意内容をいつでも変更できます。
+- プライバシーポリシー（https://techgym.jp/privacy-policy/ ）へのリンクをタイトル画面に表示しています。
+- 広告ユニット ID は `js/ads.js`、AdMob のアプリ ID は `android/app/src/main/res/values/strings.xml` にあります。
+  **本番の ID はまだ入っていません。** AdMob でアプリと広告ユニットを作成したら、アプリ ID を `strings.xml` に、インタースティシャルとリワードの広告ユニット ID を `js/ads.js` の `production` に入れてください。
+  （それまでは `strings.xml` に Google のサンプル用アプリ ID が入っており、本番ビルドでは広告を出しません）
+- 動作確認用 APK（Release の `kenchiji.apk`）は常に **Google のテスト広告** を表示します。自分でタップしても問題ありません。
+- Google Play 用の .aab をビルドするときだけ、CI が `ADMOB_MODE=production` で本番の広告に切り替えます（`scripts/build-web.js` が `js/ads-config.js` を書き換えます）。
+- 本番の広告を自分でタップするとアカウント停止の対象になるので注意してください。
+
+### ビルド方法
+
+**GitHub Actions（自動）**: Web 版や `android/` を変更して push すると、`.github/workflows/android.yml` が動作確認用の APK を作ります。
+既定ブランチのビルドは GitHub の Release（`android-latest`）に自動で載るので、Android 端末で次の URL を開くか QR コードを読み取るだけで最新版をダウンロードできます。
+
+https://github.com/techgymjp/kenchiji/releases/latest/download/kenchiji.apk
+
+<img src="docs/apk-qr.png" alt="APK ダウンロード用 QR コード" width="180">
+
+ダウンロードした `kenchiji.apk` を開き、「提供元不明のアプリ」のインストールを許可するとインストールできます。
+動作確認用の署名鍵（`android/app/debug.keystore`）はリポジトリで固定しているので、新しいビルドもアンインストールせずに上書きインストールできます。
+（Release に載る APK はデバッグ版です。Google Play には下の手順で作る署名済み .aab を使います）
+
+**手元の PC（Android Studio）**:
+
+```bash
+npm ci
+npm run android:sync   # Web ファイルを www/ にまとめて Android プロジェクトへコピー
+npm run android:open   # Android Studio で開く
+```
+
+### Google Play へ公開する手順
+
+1. アップロード鍵（`upload.jks`）は他のゲームと同じものを使い回せます。新しく作る場合は次のとおり（Java が必要）
+   ```bash
+   keytool -genkeypair -v -keystore upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
+   base64 -i upload.jks | tr -d '\n' | pbcopy          # macOS（クリップボードにコピー）
+   ```
+2. GitHub のリポジトリの Settings → Secrets and variables → Actions に次の 4 つを登録する
+   | 名前 | 内容 |
+   | --- | --- |
+   | `ANDROID_KEYSTORE_BASE64` | `upload.jks` を base64 にした文字列 |
+   | `ANDROID_KEYSTORE_PASSWORD` | キーストアのパスワード |
+   | `ANDROID_KEY_ALIAS` | `upload`（作成時に指定した別名） |
+   | `ANDROID_KEY_PASSWORD` | 鍵のパスワード |
+3. Actions の「Android build」を実行すると、署名済みの `kenchiji-release-aab`（.aab）ができる
+4. [Google Play Console](https://play.google.com/console) でアプリを作成し、.aab をアップロードする
+   （ストア掲載情報・スクリーンショット・プライバシーポリシー・コンテンツのレーティングなどの入力が必要です。
+   広告を入れているので「広告を含む」の申告、データセーフティでの広告 ID の申告も必要です）
+
+バージョン番号（versionCode）は Actions の実行回数が自動で使われます。表示用のバージョン名は `package.json` の `version` で、タイトル画面の右下に表示されます。
+
+## Web 版の公開（Vercel）
+
+`package.json` があるため、Vercel はビルドが必要なプロジェクトと判断します。`vercel.json` で `npm run build` と出力先 `www` を指定しています。
+
+## ライセンス
+
+All rights reserved. 著作権はテックジム株式会社に帰属します。無断での複製・改変・再配布、Web サイトやアプリとしての公開を禁止します。ただし、テックジムの受講生が学習目的で複製・改変することは許可します（商用利用は不可。詳しくは `LICENSE`）。
+同梱のフォント DotGothic16 は SIL Open Font License 1.1 です（`css/fonts/OFL.txt`）。
+
 ## ファイル構成
 
 ```
@@ -81,6 +164,15 @@ js/bgm.js       ファミコン風BGM（曲データとシーケンサー）
 js/events.js    団体・演説・ランダムイベント・遅延イベント・予定イベント・施設
 js/election.js  支持率モデル・世論調査・開票速報・エンディング
 js/engine.js    ゲーム状態・移動・描画・1日の流れ・タイトル
+js/native.js    Android アプリとの連携（戻るボタン・アプリ切替・シェア・バージョン表示）
+js/ads.js       Google AdMob 広告（Android アプリのみ）
+js/ads-config.js  広告のモード（test / production。ビルド時に生成）
+js/build-info.js  タイトル画面に出すバージョン（ビルド時に生成）
+css/fonts/      DotGothic16 フォント（SIL OFL 1.1）
+assets/         アイコンと起動画面の元画像
+android/        Android アプリのプロジェクト（Capacitor）
+scripts/        Android に同梱する Web ファイルを www/ にまとめるスクリプト
+docs/           APK ダウンロード用 QR コード・ストア用アイコン
 ```
 
 セーブは毎朝自動で行われ、ブラウザの localStorage に保存されます（メニューから手動セーブも可能）。

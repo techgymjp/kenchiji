@@ -271,5 +271,15 @@ async function ending(R) {
   if (G.log.length) h += '<p>' + G.log.map(l => `・${l.day}日目　${l.text}`).join('<br>') + '</p>';
   await UI.showPanel(h);
   try { localStorage.removeItem('kenchiji_save'); } catch (e) { /* ignore */ }
+  const text = win
+    ? `「県知事になろう」で ひなた県知事に 当選しました！ 得票率 ${pct('p')}%　称号「${rank}」 #県知事になろう`
+    : `「県知事になろう」で ひなた県知事選に 挑戦… ${R.order.indexOf('p') + 1}位（得票率 ${pct('p')}%）　称号「${rank}」 #県知事になろう`;
+  while (true) {
+    const c = await UI.ask('おつかれさまでした！', ['タイトルに もどる', '結果を シェアする']);
+    if (c === 0) break;
+    const r = await Native.share(text);
+    if (r === 'copied') await UI.say('結果を クリップボードに コピーしました。');
+    else if (r === 'failed') await UI.say('シェアできませんでした…');
+  }
   location.reload();
 }

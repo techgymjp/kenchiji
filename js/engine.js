@@ -174,7 +174,23 @@ async function checkDayEnd() {
   if (G.hp <= 0) {
     BGM.play('trouble');
     Sound.bad();
-    await UI.say('{N}は ふらふらと よろめいた…', 'バタッ！', '{N}は 過労で 倒れてしまった！', '…気がつくと 病院の ベッドの上だった。', 'スタッフ「今日は もう 休んでください！」');
+    await UI.say('{N}は ふらふらと よろめいた…', 'バタッ！', '{N}は 過労で 倒れてしまった！');
+    // Android アプリでは リワード広告を見れば その日の活動を続けられる（1日1回）
+    if (Ads.available && !G.daily.revived) {
+      const c = await UI.ask('スタッフ「{N}さん！ 支援者からの 応援動画が 届いてます！ 見ますか？」', ['応援動画を 見て 立ちあがる（広告）', '今日は もう 休む']);
+      if (c === 0) {
+        const r = await Ads.showRewarded();
+        if (r === 'rewarded') {
+          G.daily.revived = true;
+          G.hp = 60;
+          updateStatus();
+          await UI.say('「負けるなー！」「まだ 終わってないぞ！」', '{N}は 応援の 声に 励まされて 立ちあがった！', '体力が 60 まで かいふくした！');
+          return;
+        }
+        await UI.say(r === 'skipped' ? '…動画を 最後まで 見られなかった。' : 'いまは 応援動画を 見られないようだ…');
+      }
+    }
+    await UI.say('…気がつくと 病院の ベッドの上だった。', 'スタッフ「今日は もう 休んでください！」');
     G.collapsed = true;
     await nightSequence();
     return;
@@ -244,6 +260,8 @@ async function nightSequence() {
   }
   await UI.fadeIn();
   await UI.showPanel(h);
+  // Android アプリでは 3日に1回、夜の報告のあとに全画面広告を出す
+  if (Ads.available && G.day % 3 === 0) await Ads.showInterstitial();
 
   if (G.day >= LAST_DAY) {
     await electionNight();

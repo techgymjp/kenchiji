@@ -11,6 +11,12 @@
   --a: #ff7ab0;
 }
 
+@font-face {
+  font-family: "DotGothic16";
+  src: url("fonts/DotGothic16-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -213,6 +219,9 @@ html, body {
 .title-sub { font-size: 3cqw; color: #fff; letter-spacing: 0.6cqw; }
 .title-desc { font-size: 3cqw; margin-bottom: 3cqw; }
 .title-help { margin-top: 3cqw; font-size: 2.2cqw; color: #aaa; }
+.title-legal { margin-top: 1.5cqw; font-size: 2.2cqw; display: flex; gap: 3cqw; justify-content: center; }
+.title-legal a { color: #9ab4ff; }
+#buildInfo { position: absolute; right: 1.5cqw; bottom: 1cqw; font-size: 2cqw; color: #777; }
 #titleMenu {
   position: relative;
   display: inline-block;
@@ -241,6 +250,9 @@ html, body {
   align-items: center;
   padding: 0 18px 10px;
 }
+/* Android アプリでは常にタッチ操作のボタンを出す */
+body.native { --pad-h: 170px; }
+body.native #pad { display: flex; }
 @media (pointer: coarse) {
   :root { --pad-h: 170px; }
   #pad { display: flex; }
@@ -276,5 +288,5 @@ html, body {
   line-height: 1;
 }
 .ab button small { font-size: 10px; margin-top: 3px; }
-.ab .a { background: #8a1f1f; margin-bottom: 30px; }
-.ab .b { background: #1f3a8a; }
+#pad .ab .a { background: #8a1f1f; margin-bottom: 30px; }
+#pad .ab .b { background: #1f3a8a; }
