@@ -120,7 +120,7 @@ async function doSpeech(X, pod) {
   }
   const opts = Object.keys(THEMES).map(k => THEMES[k]);
   opts.push('やめる');
-  const c = await X.ask(`${pod.name}の 演説台だ。\nなにを うったえる？`, opts, { title: '演説テーマ' });
+  const c = await X.ask(tr('{p}の 演説台だ。\nなにを うったえる？', { p: pod.name }), opts, { title: '演説テーマ' });
   if (c < 0 || c === opts.length - 1) return;
   const theme = Object.keys(THEMES)[c];
   const h = Math.floor(G.min / 60);
@@ -128,16 +128,17 @@ async function doSpeech(X, pod) {
   if (h === 12 || h >= 17) crowdF = 1.2;
   else if (h <= 8) crowdF = 0.85;
   const crowd = Math.round((20 + G.fame * 4) * crowdF * (AREAS[area].voters / 150000) * (0.8 + Math.random() * 0.4));
-  await X.say(`{N}は 演説台に 立った！`, `聴衆は ${crowd}人ほど あつまっている。`);
+  await X.say('{N}は 演説台に 立った！', tr('聴衆は {n}人ほど あつまっている。', { n: crowd }));
   const interest = AREAS[area].interest[theme];
   const repeat = G.daily.themes[`${area}_${theme}`] ? 0.4 : 1;
   G.daily.themes[`${area}_${theme}`] = 1;
   G.daily.speech[pod.id] = (G.daily.speech[pod.id] || 0) + 1;
   const main = G.mainTheme === theme ? 1.25 : 1;
   let gain = 1.6 * interest * crowdF * repeat * main;
-  if (interest >= 1.3) await X.say(`「${THEMES[theme]}」の話に 聴衆が 身を乗り出した！`);
-  else if (interest <= 0.6) await X.say(`「${THEMES[theme]}」の話は この地区では いまいち ピンと こないようだ…`);
-  else await X.say(`{N}は 「${THEMES[theme]}」について 熱く 語った。`);
+  const tp = { t: THEMES[theme] };
+  if (interest >= 1.3) await X.say(tr('「{t}」の話に 聴衆が 身を乗り出した！', tp));
+  else if (interest <= 0.6) await X.say(tr('「{t}」の話は この地区では いまいち ピンと こないようだ…', tp));
+  else await X.say(tr('{N}は 「{t}」について 熱く 語った。', tp));
   if (G.mainTheme === theme) await X.say('第一声から 一貫した 訴えに 説得力が ある！');
 
   if (Math.random() < 0.3) {
@@ -203,7 +204,7 @@ const ENCOUNTERS = [
         await X.say('若者A「…チッ、おっさんに 免じて 勘弁してやらあ」', '若者B「てか アンタ、ポスターの人じゃん。ウケる」', '若者A「俺ら ヒマだし、ポスター貼り 手伝ってやるよ！」');
         const free = MAP.boards.filter(b => !G.boards[b.id]).slice(0, 4);
         free.forEach(b => { G.boards[b.id] = true; });
-        if (free.length) await X.say(`若者たちが ${free.length}か所の 掲示板に ポスターを 貼ってくれた！`);
+        if (free.length) await X.say(tr('若者たちが {n}か所の 掲示板に ポスターを 貼ってくれた！', { n: free.length }));
         X.log('喧嘩を仲裁し、若者たちがポスター貼りを手伝ってくれた');
         await X.fx({ sup: 1.5, fame: 3 + free.length, hp: -8, time: 20 });
       } else {
@@ -591,7 +592,7 @@ const ENCOUNTERS = [
 
   { id: 'handshake_line', areas: null, w: 4, once: false, run: async X => {
     const n = 5 + Math.floor(Math.random() * 15);
-    const c = await X.ask(`バス停に ${n}人ほどの 人が 並んでいる。`, ['一人ずつ 握手して まわる', '軽く 会釈する']);
+    const c = await X.ask(tr('バス停に {n}人ほどの 人が 並んでいる。', { n }), ['一人ずつ 握手して まわる', '軽く 会釈する']);
     if (c === 0) { await X.say('{N}は 一人ひとりの 目を見て 握手した。', '「がんばってね」「応援してるよ」'); await X.fx({ sup: 0.3 + n * 0.06, time: 15, hp: -2 }); }
   } },
 
@@ -875,19 +876,20 @@ const RIVAL_NEWS = [
 async function orgVisit(X, oid) {
   const o = ORGS[oid];
   const st = G.org[oid];
+  const op = { o: o.name, b: o.boss };
   if (st.endorsed) {
-    await X.say(`${o.name}の 事務所だ。`, `${o.boss}「推薦候補として 全力で 応援しとりますよ！」`, '壁に {N}の ポスターが 何枚も 貼られている。');
+    await X.say(tr('{o}の 事務所だ。', op), tr('{b}「推薦候補として 全力で 応援しとりますよ！」', op), '壁に {N}の ポスターが 何枚も 貼られている。');
     return;
   }
   const meter = () => {
     const n = Math.max(0, Math.min(10, Math.round(st.rel / 10)));
-    return '信頼度 ' + '■'.repeat(n) + '□'.repeat(10 - n);
+    return tr('信頼度') + ' ' + '■'.repeat(n) + '□'.repeat(10 - n);
   };
-  await X.say(`${o.name}の 事務所だ。\n${meter()}`);
+  await X.say(tr('{o}の 事務所だ。', op) + '\n' + meter());
   while (true) {
     const c = await X.ask(null, ['あいさつする', '推薦を お願いする', '立ち去る'], { cancel: true });
     if (c === 0) {
-      if (G.daily.org[oid]) { await X.say(`${o.boss}「今日は もう お会いしましたな。熱心ですなあ」`); continue; }
+      if (G.daily.org[oid]) { await X.say(tr('{b}「今日は もう お会いしましたな。熱心ですなあ」', op)); continue; }
       G.daily.org[oid] = true;
       const q = o.qs[st.q % o.qs.length];
       st.q++;
@@ -902,12 +904,12 @@ async function orgVisit(X, oid) {
       if (st.rel >= 80) {
         st.endorsed = true;
         Sound.good();
-        await X.say(`${o.boss}「…わかりました。${o.name}は {N}候補を 推薦します！」`, `${o.name}の 推薦を 勝ち取った！`, '権田陣営に とって 大きな 痛手だ！');
-        X.log(`${o.name}の推薦を獲得`);
+        await X.say(tr('{b}「…わかりました。{o}は {N}候補を 推薦します！」', op), tr('{o}の 推薦を 勝ち取った！', op), '権田陣営に とって 大きな 痛手だ！');
+        X.log('{o}の推薦を獲得', { org: oid });
         await X.fx(Object.assign({ time: 20 }, o.endorse));
         return;
       }
-      await X.say(`${o.boss}「推薦？ ははは、気が早い。まずは 我々の話を 聞いてもらわんと」`);
+      await X.say(tr('{b}「推薦？ ははは、気が早い。まずは 我々の話を 聞いてもらわんと」', op));
       st.rel = Math.max(0, st.rel - 5);
       await X.say(meter());
     } else return;
@@ -923,8 +925,8 @@ async function restAt(X, name, hp, time, money) {
 
 const FACILITIES = {
   office: async X => {
-    const dog = X.has('dog') ? '\n看板犬が しっぽを 振っている。' : '';
-    await X.say(`{N}選挙事務所だ。スタッフが 電話かけに 追われている。${dog}`);
+    const dog = X.has('dog') ? '\n' + tr('看板犬が しっぽを 振っている。') : '';
+    await X.say(tr('{N}選挙事務所だ。スタッフが 電話かけに 追われている。') + dog);
     while (true) {
       const opts = ['ひと休みする（1時間）', 'ポスターを 印刷する（50万円で20枚）', 'スタッフに 相談する', '今日の 活動を 終える', '出る'];
       // Android アプリでは 1日1回、応援動画（リワード広告）で体力を全回復できる
@@ -999,7 +1001,7 @@ const FACILITIES = {
     if (G.daily.kaikan) { await X.say('今日は もう 開いた。'); return; }
     G.daily.kaikan = true;
     const n = Math.round(50 + G.fame * 8);
-    await X.say(`個人演説会を 開いた！ ${n}人が 集まった。`);
+    await X.say(tr('個人演説会を 開いた！ {n}人が 集まった。', { n }));
     if (G.fame < 25) await X.say('…空席が 目立つ。まだ 知名度が 足りないようだ。');
     await X.fx({ money: -80, at: { chuo: 0.5 + G.fame / 25 }, hp: -8, time: 90 });
   },
@@ -1121,7 +1123,7 @@ const FACILITIES = {
     } else if (c === 1) {
       const r = ['大吉', '吉', '中吉', '小吉', '末吉', '凶'][Math.floor(Math.random() * 6)];
       const t = { 大吉: '「当選間違いなし。ただし 慢心するべからず」', 吉: '「人を 助けよ。されど 人を 選べ」', 中吉: '「待ち人 来る。年長者を 大切に」', 小吉: '「甘い話に 乗るべからず」', 末吉: '「写真に 気をつけよ」', 凶: '「…失言に 注意」' }[r];
-      await X.say(`おみくじは… 【${r}】！`, t);
+      await X.say(tr('おみくじは… 【{r}】！', { r: tr(r) }), t);
     }
   },
   ryokan: async X => {
@@ -1224,17 +1226,21 @@ async function gossip(X) {
 async function staffAdvice(X) {
   const tips = [];
   const today = SCHEDULE.filter(s => s.day === G.day && !G.schedDone[s.id]);
-  today.forEach(s => tips.push(`「今日は ${s.title}が あります！ 忘れずに！」`));
+  today.forEach(s => tips.push(tr('「今日は {t}が あります！ 忘れずに！」', { t: s.title })));
   const weak = AREA_IDS.map(a => [a, shareOf(a).p]).sort((x, y) => x[1] - y[1])[0];
-  tips.push(`「${AREAS[weak[0]].name}が 手薄です。演説台で 地域に 合った テーマを 訴えましょう」`);
+  tips.push(tr('「{a}が 手薄です。演説台で 地域に 合った テーマを 訴えましょう」', { a: AREAS[weak[0]].name }));
   const notEnd = Object.keys(ORGS).filter(k => !G.org[k].endorsed);
   if (notEnd.length) {
     const k = notEnd[Math.floor(Math.random() * notEnd.length)];
-    tips.push(`「${ORGS[k].name}の 推薦が 取れれば 大きいです。信頼度を 上げてから 推薦を お願いしましょう」`);
+    tips.push(tr('「{o}の 推薦が 取れれば 大きいです。信頼度を 上げてから 推薦を お願いしましょう」', { o: ORGS[k].name }));
   }
   const left = MAP.boards.length - Object.keys(G.boards).length;
-  if (left > 0) tips.push(`「ポスター掲示板が あと ${left}か所 残っています。手持ちは ${G.posters}枚です」`);
+  if (left > 0) tips.push(tr('「ポスター掲示板が あと {n}か所 残っています。手持ちは {p}枚です」', { n: left, p: G.posters }));
   if (G.hp < 40) tips.push('「顔色が 悪いですよ！ 温泉か 病院で 休んでください！」');
   tips.push('「うまい話には 裏が あります。人助けも、相手と 状況を よく 見て…」');
   await X.say('スタッフ「そうですね…」', ...tips.slice(0, 4));
 }
+
+// 名前や見出しは表示言語に合わせて訳す（英語は js/i18n-en.js）
+Object.values(ORGS).forEach(o => I18N.localize(o, ['name', 'boss']));
+SCHEDULE.forEach(s => I18N.localize(s, ['title']));

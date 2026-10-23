@@ -45,8 +45,9 @@ function loadSave() {
 // ===================== 効果 =====================
 function supLine(name, n) {
   const a = Math.abs(n);
-  const adv = a >= 3 ? 'ぐんと ' : a >= 1.2 ? '' : 'すこし ';
-  return n > 0 ? `${name}で 支持が ${adv}ひろがった！` : `${name}で 支持が ${adv}へった…`;
+  const p = { a: name };
+  if (n > 0) return a >= 3 ? tr('{a}で 支持が ぐんと ひろがった！', p) : a >= 1.2 ? tr('{a}で 支持が ひろがった！', p) : tr('{a}で 支持が すこし ひろがった！', p);
+  return a >= 3 ? tr('{a}で 支持が ぐんと へった…', p) : a >= 1.2 ? tr('{a}で 支持が へった…', p) : tr('{a}で 支持が すこし へった…', p);
 }
 
 async function applyFx(o, ctxArea) {
@@ -67,7 +68,7 @@ async function applyFx(o, ctxArea) {
   if (o.at) Object.keys(o.at).forEach(a => sup(a, o.at[a]));
   if (o.all) {
     AREA_IDS.forEach(a => addP(a, o.all));
-    lines.push(supLine('県内全体', o.all));
+    lines.push(supLine(tr('県内全体'), o.all));
     if (o.all > 0) good++; else bad++;
   }
   const rival = (k, perArea, label) => {
@@ -76,40 +77,40 @@ async function applyFx(o, ctxArea) {
       G.sup[a][k] = Math.max(1, G.sup[a][k] + perArea[a]);
       sum += perArea[a];
     });
-    if (sum) lines.push(sum < 0 ? `${label}陣営の 勢いが にぶった！` : `${label}陣営が 勢いづいている…`);
+    if (sum) lines.push(sum < 0 ? tr('{c}陣営の 勢いが にぶった！', { c: label }) : tr('{c}陣営が 勢いづいている…', { c: label }));
   };
   const allAreas = n => Object.fromEntries(AREA_IDS.map(a => [a, n]));
-  if (o.g) rival('g', allAreas(o.g), '権田');
-  if (o.ga) rival('g', o.ga, '権田');
-  if (o.ar) rival('a', allAreas(o.ar), '新井');
+  if (o.g) rival('g', allAreas(o.g), RIVALS.g.short);
+  if (o.ga) rival('g', o.ga, RIVALS.g.short);
+  if (o.ar) rival('a', allAreas(o.ar), RIVALS.a.short);
   if (o.fame) {
     const before = G.fame;
     G.fame = Math.max(0, Math.min(100, G.fame + o.fame));
     const d = Math.round(G.fame - before);
-    if (d > 0) { lines.push(`知名度が ${d} あがった！`); good++; }
-    else if (d < 0) lines.push(`知名度が ${-d} さがった…`);
+    if (d > 0) { lines.push(tr('知名度が {n} あがった！', { n: d })); good++; }
+    else if (d < 0) lines.push(tr('知名度が {n} さがった…', { n: -d }));
   }
   if (o.money) {
     G.money = Math.round(G.money + o.money);
-    lines.push(o.money > 0 ? `資金が ${o.money}万円 ふえた！` : `資金を ${-o.money}万円 つかった。`);
+    lines.push(o.money > 0 ? tr('資金が {m} ふえた！', { m: fmtMoney(o.money) }) : tr('資金を {m} つかった。', { m: fmtMoney(-o.money) }));
   }
   if (o.hp) {
     const before = G.hp;
     G.hp = Math.max(0, Math.min(100, G.hp + o.hp));
     const d = Math.round(G.hp - before);
-    if (d > 0) lines.push(`体力が ${d} かいふくした！`);
-    else if (d < 0) lines.push(`体力が ${-d} へった。`);
+    if (d > 0) lines.push(tr('体力が {n} かいふくした！', { n: d }));
+    else if (d < 0) lines.push(tr('体力が {n} へった。', { n: -d }));
   }
   if (o.posters) {
     G.posters += o.posters;
-    lines.push(`ポスターが ${o.posters}枚 とどいた！`);
+    lines.push(tr('ポスターが {n}枚 とどいた！', { n: o.posters }));
   }
   if (o.org) {
     Object.keys(o.org).forEach(id => {
       const st = G.org[id];
       if (!st || st.endorsed || !o.org[id]) return;
       st.rel = Math.max(0, Math.min(100, st.rel + o.org[id]));
-      lines.push(`${ORGS[id].name}の 信頼度が ${o.org[id] > 0 ? 'あがった！' : 'さがった…'}`);
+      lines.push(tr(o.org[id] > 0 ? '{o}の 信頼度が あがった！' : '{o}の 信頼度が さがった…', { o: ORGS[id].name }));
     });
   }
   if (o.time) G.min += o.time;
@@ -133,7 +134,7 @@ function makeX(area) {
     later: (d, id) => G.pending.push({ day: G.day + d, id }),
     flag: (k, v = true) => { G.flags[k] = v; },
     has: k => !!G.flags[k],
-    log: t => G.log.push({ day: G.day, text: t }),
+    log: (t, p) => G.log.push({ day: G.day, text: t, p }),
   };
 }
 
@@ -221,17 +222,17 @@ async function nightSequence() {
   UI.closeMsg();
   BGM.play('night');
   await UI.fadeOut();
-  let h = `<h2>${G.day}日目　終了</h2>`;
+  let h = `<h2>${tr('{d}日目　終了', { d: G.day })}</h2>`;
   const g = G.dayGain;
   const stars = g >= 14 ? 5 : g >= 9 ? 4 : g >= 5 ? 3 : g >= 2 ? 2 : 1;
-  h += `<p>今日の 手応え　<span class="stars">${starStr(stars)}</span></p>`;
+  h += `<p>${tr('今日の 手応え')}　<span class="stars">${starStr(stars)}</span></p>`;
 
   // 欠席した予定
   const missed = SCHEDULE.filter(s => s.day === G.day && !G.schedDone[s.id]);
   missed.forEach(s => {
     const pen = s.big ? -2.5 : -1;
     AREA_IDS.forEach(a => { G.sup[a].p = Math.max(1, G.sup[a].p + pen * (s.big ? 1 : 0.4)); });
-    h += `<p class="bad">「${s.title}」を 欠席した…（支持 ダウン）</p>`;
+    h += `<p class="bad">${tr('「{t}」を 欠席した…（支持 ダウン）', { t: s.title })}</p>`;
   });
 
   // ライバルのニュース
@@ -241,22 +242,22 @@ async function nightSequence() {
     G.newsUsed.push(pick);
     const n = RIVAL_NEWS[pick];
     await applyFx(Object.assign({ quiet: true }, n.fx));
-    h += `<div class="news"><b>夜のニュース</b>${n.t}</div>`;
+    h += `<div class="news"><b>${tr('夜のニュース')}</b>${tr(n.t)}</div>`;
   }
   rivalDrift();
   if ([5, 10, 15].includes(G.day)) h += pollHtml();
 
   G.money -= 30;
-  h += `<p class="dim">事務所の 経費　-30万円（残り ${G.money}万円）</p>`;
+  h += `<p class="dim">${tr('事務所の 経費　-{c}（残り {m}）', { c: fmtMoney(30), m: fmtMoney(G.money) })}</p>`;
   if (G.money < 0) {
-    h += '<p class="bad">資金が 底をついた！ 支援者から 借金して しのいだ…</p>';
+    h += `<p class="bad">${tr('資金が 底をついた！ 支援者から 借金して しのいだ…')}</p>`;
     G.money = 0;
     AREA_IDS.forEach(a => { G.sup[a].p = Math.max(1, G.sup[a].p - 0.5); });
   }
   if (G.day >= LAST_DAY) {
-    h += '<h3>17日間の 選挙戦が 終わった。</h3><p>明日は いよいよ 投票日だ…</p>';
+    h += `<h3>${tr('17日間の 選挙戦が 終わった。')}</h3><p>${tr('明日は いよいよ 投票日だ…')}</p>`;
   } else {
-    h += `<h3>選挙戦は 残り ${LAST_DAY - G.day}日</h3>`;
+    h += `<h3>${tr('選挙戦は 残り {n}日', { n: LAST_DAY - G.day })}</h3>`;
   }
   await UI.fadeIn();
   await UI.showPanel(h);
@@ -291,7 +292,7 @@ async function nightSequence() {
 
 async function morning() {
   const left = LAST_DAY + 1 - G.day;
-  await UI.say(`${G.day}日目の 朝が きた。\n投票日まで あと ${left}日。${G.day === LAST_DAY ? '\n今日が 選挙運動 最終日だ！' : ''}`);
+  await UI.say(tr('{d}日目の 朝が きた。\n投票日まで あと {n}日。', { d: G.day, n: left }) + (G.day === LAST_DAY ? '\n' + tr('今日が 選挙運動 最終日だ！') : ''));
   // 後から起きる出来事
   const due = G.pending.filter(p => p.day <= G.day);
   G.pending = G.pending.filter(p => p.day > G.day);
@@ -304,7 +305,7 @@ async function morning() {
   }
   // 今日の予定
   const today = SCHEDULE.filter(s => s.day === G.day);
-  if (today.length) await UI.say('スタッフ「今日の 予定です！」\n' + today.map(s => '・' + s.title).join('\n'));
+  if (today.length) await UI.say(tr('スタッフ「今日の 予定です！」') + '\n' + today.map(s => '・' + s.title).join('\n'));
   // 作戦
   const c = await UI.ask('スタッフ「今日の 事務所の 作戦は どうしますか？」', [
     '電話作戦（30万円・県内全体の支持）', 'ビラのポスティング（20万円・知名度）', 'SNS発信（無料・若者に効く）', 'まかせる（何もしない）',
@@ -333,7 +334,8 @@ async function prologue() {
   const keys = Object.keys(THEMES);
   const c = await UI.ask('第一声で 何を いちばんに 訴える？', keys.map(k => THEMES[k]));
   G.mainTheme = keys[c];
-  await UI.say(`{N}「私は 『${THEMES[G.mainTheme]}』で ひなた県を 変えます！」`, '支援者「うおおおー！」', `（演説で 「${THEMES[G.mainTheme]}」を 訴えると 効果が 少し 高まる）`);
+  const tp = { t: THEMES[G.mainTheme] };
+  await UI.say(tr('{N}「私は 『{t}』で ひなた県を 変えます！」', tp), '支援者「うおおおー！」', tr('（演説で 「{t}」を 訴えると 効果が 少し 高まる）', tp));
   await UI.say(
     'スタッフ「{N}さん、基本を 確認しましょう！」',
     'スタッフ「県内を 歩きまわって 人と 話したり、施設を 訪ねたり、ポスターを 貼ったり しましょう」',
@@ -481,12 +483,12 @@ async function enterBuilding(b) {
       await SCHEDULED_EVENTS[sch.id](X);
       return;
     }
-    if (h < sch.from) await UI.say(`今日は ここで 「${sch.title}」が ある。\nまだ 始まっていないようだ。`);
+    if (h < sch.from) await UI.say(tr('今日は ここで 「{t}」が ある。\nまだ 始まっていないようだ。', { t: sch.title }));
   }
   const f = FACILITIES[b.id];
   BGM.play('town');
   if (f) await f(X);
-  else await UI.say(`${b.label}だ。`);
+  else await UI.say(tr('{b}だ。', { b: b.label }));
 }
 
 async function examine() {
@@ -528,7 +530,7 @@ async function examine() {
 async function commandMenu() {
   while (true) {
     const c = await UI.choose([
-      'いどう（選挙カー）', 'つよさ', 'じょうせい', 'にってい', 'てちょう', 'セーブ', `おと：${Sound.on ? 'ON' : 'OFF'}`, 'とじる',
+      'いどう（選挙カー）', 'つよさ', 'じょうせい', 'にってい', 'てちょう', 'セーブ', tr(Sound.on ? 'おと：ON' : 'おと：OFF'), 'とじる',
     ], { cancel: true, pos: 'left top', title: 'コマンド' });
     if (c < 0 || c === 7) return;
     if (c === 0) { if (await carMove()) return; }
@@ -542,7 +544,7 @@ async function commandMenu() {
 }
 
 async function carMove() {
-  const dests = [['選挙事務所前', 'chuo', [27, 27]], ...AREA_IDS.map(a => [AREAS[a].name, a, AREAS[a].hub])];
+  const dests = [[tr('選挙事務所前'), 'chuo', [27, 27]], ...AREA_IDS.map(a => [AREAS[a].name, a, AREAS[a].hub])];
   const c = await UI.choose([...dests.map(d => d[0]), 'やめる'], { cancel: true, pos: 'left top', title: '選挙カーで どこへ？（30分）' });
   if (c < 0 || c === dests.length) return false;
   const [label, area, [x, y]] = dests[c];
@@ -553,7 +555,7 @@ async function carMove() {
   P.reset();
   updateArea(true);
   await UI.fadeIn();
-  await UI.say(`選挙カーで ${label}へ 移動した。\n「${G.name}、${G.name}で ございます！」`);
+  await UI.say(tr('選挙カーで {a}へ 移動した。\n「{N}、{N}で ございます！」', { a: label }));
   await applyFx({ at: { [area]: 0.3 }, time: 30, hp: 3, quiet: true });
   return true;
 }
@@ -562,33 +564,40 @@ function statusHtml() {
   const end = Object.keys(ORGS).map(k => {
     const st = G.org[k];
     const n = Math.max(0, Math.min(10, Math.round(st.rel / 10)));
-    return `<tr><td>${ORGS[k].name}</td><td>${st.endorsed ? '<span class="good">推薦獲得！</span>' : '■'.repeat(n) + '□'.repeat(10 - n)}</td></tr>`;
+    return `<tr><td>${ORGS[k].name}</td><td>${st.endorsed ? `<span class="good">${tr('推薦獲得！')}</span>` : '■'.repeat(n) + '□'.repeat(10 - n)}</td></tr>`;
   }).join('');
-  return `<h2>つよさ</h2><table>
-    <tr><td>なまえ</td><td>${G.name}</td></tr>
-    <tr><td>体力</td><td>${G.hp} / 100</td></tr>
-    <tr><td>資金</td><td>${G.money.toLocaleString('ja-JP')}万円</td></tr>
-    <tr><td>知名度</td><td>${Math.round(G.fame)}</td></tr>
-    <tr><td>ポスター</td><td>手持ち ${G.posters}枚　（掲示 ${Object.keys(G.boards).length}/${MAP.boards.length}か所）</td></tr>
-    <tr><td>第一声のテーマ</td><td>${THEMES[G.mainTheme] || '-'}</td></tr>
-    </table><h3>団体の 信頼度</h3><table>${end}</table>
-    <p class="dim">信頼度が 8割を こえたら 推薦を お願いしてみよう</p>`;
+  return `<h2>${tr('つよさ')}</h2><table>
+    <tr><td>${tr('なまえ')}</td><td>${G.name}</td></tr>
+    <tr><td>${tr('体力')}</td><td>${G.hp} / 100</td></tr>
+    <tr><td>${tr('資金')}</td><td>${fmtMoney(G.money)}</td></tr>
+    <tr><td>${tr('知名度')}</td><td>${Math.round(G.fame)}</td></tr>
+    <tr><td>${tr('ポスター')}</td><td>${tr('手持ち {n}枚　（掲示 {b}/{t}か所）', { n: G.posters, b: Object.keys(G.boards).length, t: MAP.boards.length })}</td></tr>
+    <tr><td>${tr('第一声のテーマ')}</td><td>${THEMES[G.mainTheme] || '-'}</td></tr>
+    </table><h3>${tr('団体の 信頼度')}</h3><table>${end}</table>
+    <p class="dim">${tr('信頼度が 8割を こえたら 推薦を お願いしてみよう')}</p>`;
 }
 
 function scheduleHtml() {
-  let h = '<h2>にってい</h2><table>';
+  let h = `<h2>${tr('にってい')}</h2><table>`;
   SCHEDULE.forEach(s => {
-    const st = G.schedDone[s.id] ? '<span class="good">済</span>' : s.day < G.day ? '<span class="dim">欠席</span>' : s.day === G.day ? '<span class="bad">今日！</span>' : '';
-    h += `<tr><td>${s.day}日目</td><td>${s.title}</td><td>${st}</td></tr>`;
+    const st = G.schedDone[s.id] ? `<span class="good">${tr('済')}</span>` : s.day < G.day ? `<span class="dim">${tr('欠席')}</span>` : s.day === G.day ? `<span class="bad">${tr('今日！')}</span>` : '';
+    h += `<tr><td>${tr('{d}日目', { d: s.day })}</td><td>${s.title}</td><td>${st}</td></tr>`;
   });
-  h += '<tr><td>5・10・15日目</td><td>新聞の 世論調査（夜に発表）</td><td></td></tr>';
-  h += `<tr><td>${LAST_DAY + 1}日目</td><td>投票日・開票</td><td></td></tr></table>`;
+  h += `<tr><td>${tr('5・10・15日目')}</td><td>${tr('新聞の 世論調査（夜に発表）')}</td><td></td></tr>`;
+  h += `<tr><td>${tr('{d}日目', { d: LAST_DAY + 1 })}</td><td>${tr('投票日・開票')}</td><td></td></tr></table>`;
   return h;
 }
 
 function logHtml() {
-  if (!G.log.length) return '<h2>てちょう</h2><p>まだ 特別な 出来事は ない。</p>';
-  return '<h2>てちょう</h2><p>' + G.log.map(l => `${l.day}日目　${l.text}`).join('<br>') + '</p>';
+  if (!G.log.length) return `<h2>${tr('てちょう')}</h2><p>${tr('まだ 特別な 出来事は ない。')}</p>`;
+  return `<h2>${tr('てちょう')}</h2><p>` + G.log.map(logLine).join('<br>') + '</p>';
+}
+
+// てちょうの 1行（推薦団体の名前など、あとから言語を切り替えても訳せるように {名前} の形で記録している）
+function logLine(l) {
+  const p = Object.assign({}, l.p);
+  if (p.org) p.o = ORGS[p.org].name;
+  return tr('{d}日目', { d: l.day }) + '　' + UI.fmt(tr(l.text, p));
 }
 
 // ===================== 表示 =====================
@@ -601,11 +610,11 @@ function updateStatus() {
   const m = Math.min(G.min, DAY_END);
   const hh = Math.floor(m / 60), mm = String(m % 60).padStart(2, '0');
   statusEl.innerHTML =
-    `<div class="row day"><span>${G.day}日目</span><span>${G.day <= LAST_DAY ? 'あと' + (LAST_DAY + 1 - G.day) + '日' : '投票日'}</span></div>` +
-    `<div class="row"><span>時刻</span><span>${hh}:${mm}</span></div>` +
-    `<div class="row${G.hp < 25 ? ' warn' : ''}"><span>体力</span><span>${G.hp}</span></div>` +
-    `<div class="row"><span>資金</span><span>${G.money.toLocaleString('ja-JP')}万</span></div>` +
-    `<div class="row"><span>知名度</span><span>${Math.round(G.fame)}</span></div>`;
+    `<div class="row day"><span>${tr('{d}日目', { d: G.day })}</span><span>${G.day <= LAST_DAY ? tr('あと{n}日', { n: LAST_DAY + 1 - G.day }) : tr('投票日')}</span></div>` +
+    `<div class="row"><span>${tr('時刻')}</span><span>${hh}:${mm}</span></div>` +
+    `<div class="row${G.hp < 25 ? ' warn' : ''}"><span>${tr('体力')}</span><span>${G.hp}</span></div>` +
+    `<div class="row"><span>${tr('資金')}</span><span>${fmtMoney(G.money, true)}</span></div>` +
+    `<div class="row"><span>${tr('知名度')}</span><span>${Math.round(G.fame)}</span></div>`;
 }
 
 function updateArea(force) {
@@ -652,11 +661,12 @@ function drawBuilding(b, ox, oy) {
   // 看板
   let size = 10;
   ctx.font = `${size}px "DotGothic16", monospace`;
-  let tw = ctx.measureText(b.label).width;
+  const label = b.label;
+  let tw = ctx.measureText(label).width;
   while (tw > w - 6 && size > 6) {
     size--;
     ctx.font = `${size}px "DotGothic16", monospace`;
-    tw = ctx.measureText(b.label).width;
+    tw = ctx.measureText(label).width;
   }
   const sx = Math.round(x0 + (w - tw) / 2) - 2, sy = Math.round(y0 + rh / 2 - size / 2) - 2;
   ctx.fillStyle = '#fff';
@@ -665,7 +675,7 @@ function drawBuilding(b, ox, oy) {
   ctx.fillRect(sx, sy + size + 3, Math.ceil(tw) + 4, 1);
   ctx.fillStyle = '#111';
   ctx.textBaseline = 'top';
-  ctx.fillText(b.label, sx + 2, sy + 2);
+  ctx.fillText(label, sx + 2, sy + 2);
 }
 
 function render(now) {
@@ -735,11 +745,13 @@ const titleMenu = document.getElementById('titleMenu');
 
 function titleScreen() {
   const saved = loadSave();
-  const items = [{ label: 'はじめから' }, { label: 'つづきから', disabled: !saved }];
+  // 3つめは表示言語の切り替え（いまの言語ではないほうを表示する）
+  const items = [{ label: 'はじめから' }, { label: 'つづきから', disabled: !saved }, { label: '' }];
   let sel = 0;
   const render = () => {
+    items[2].label = I18N.lang === 'ja' ? '🌐 English' : '🌐 日本語';
     titleMenu.innerHTML = items.map((o, i) =>
-      `<div class="item${i === sel ? ' sel' : ''}${o.disabled ? ' dis' : ''}" data-i="${i}">${o.label}</div>`).join('');
+      `<div class="item${i === sel ? ' sel' : ''}${o.disabled ? ' dis' : ''}" data-i="${i}">${i < 2 ? tr(o.label) : o.label}</div>`).join('');
     titleMenu.querySelectorAll('.item').forEach(el => {
       el.onclick = () => { sel = +el.dataset.i; choose(); };
     });
@@ -747,13 +759,23 @@ function titleScreen() {
   const choose = () => {
     if (items[sel].disabled) { Sound.bump(); return; }
     Sound.ok();
+    if (sel === 2) {
+      I18N.set(I18N.lang === 'ja' ? 'en' : 'ja');
+      render();
+      return;
+    }
     Input.release();
     BGM.play('title');
     if (sel === 0) nameEntry();
     else startFromSave(saved);
   };
   Input.capture(k => {
-    if (k === 'up' || k === 'down') { sel = sel === 0 ? 1 : 0; if (items[sel].disabled) sel = 0; Sound.cursor(); render(); }
+    if (k === 'up' || k === 'down') {
+      const d = k === 'up' ? -1 : 1;
+      do { sel = (sel + d + items.length) % items.length; } while (items[sel].disabled);
+      Sound.cursor();
+      render();
+    }
     else if (k === 'a') choose();
   });
   render();
@@ -761,12 +783,13 @@ function titleScreen() {
 }
 
 function nameEntry() {
-  titleMenu.innerHTML = '<div>あなたの なまえを 入力してください</div><input id="nameIn" maxlength="10" value="日向 進"><div class="item sel" id="nameOk">けってい</div>';
+  const def = tr('日向 進');
+  titleMenu.innerHTML = `<div>${tr('あなたの なまえを 入力してください')}</div><input id="nameIn" maxlength="16" value="${def}"><div class="item sel" id="nameOk">${tr('けってい')}</div>`;
   const inp = document.getElementById('nameIn');
   inp.focus();
   inp.select();
   const ok = () => {
-    const name = (inp.value || '').trim() || '日向 進';
+    const name = (inp.value || '').trim() || def;
     Input.release();
     inp.blur();
     startNew(name);
@@ -799,7 +822,7 @@ async function startFromSave(saved) {
   await beginField();
   running = true;
   try {
-    await UI.say(`${G.day}日目から 再開します。`);
+    await UI.say(tr('{d}日目から 再開します。', { d: G.day }));
   } finally {
     UI.closeMsg();
     BGM.play(fieldTrack());

@@ -283,3 +283,9 @@ const MAP = (() => {
     variant: (x, y) => deco[y * W + x], nearestPassable,
   };
 })();
+
+// 名前は表示言語に合わせて訳す（英語は js/i18n-en.js）
+AREA_IDS.forEach(id => I18N.localize(AREAS[id], ['name']));
+I18N.localize(THEMES, Object.keys(THEMES));
+PODIUMS_DEF.forEach(p => I18N.localize(p, ['name']));
+MAP.buildings.forEach(b => I18N.localize(b, ['label'], '看板:'));

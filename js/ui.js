@@ -171,7 +171,7 @@ const UI = (() => {
   async function say(...pages) {
     pages = pages.flat().filter(p => p !== null && p !== undefined && p !== '');
     for (const p of pages) {
-      await typeText(fmt(p));
+      await typeText(fmt(tr(p)));
       await waitA();
     }
   }
@@ -184,9 +184,9 @@ const UI = (() => {
       if (sel < 0) sel = 0;
       choice.className = 'win' + (pos ? ' ' + pos : '');
       const render = () => {
-        choice.innerHTML = (title ? `<div class="ttl">${fmt(title)}</div>` : '') +
+        choice.innerHTML = (title ? `<div class="ttl">${fmt(tr(title))}</div>` : '') +
           items.map((o, i) =>
-            `<div class="item${i === sel ? ' sel' : ''}${o.disabled ? ' dis' : ''}" data-i="${i}">${fmt(o.label)}</div>`
+            `<div class="item${i === sel ? ' sel' : ''}${o.disabled ? ' dis' : ''}" data-i="${i}">${fmt(tr(o.label))}</div>`
           ).join('');
         choice.querySelectorAll('.item').forEach(el => {
           el.onclick = e => {
@@ -230,13 +230,13 @@ const UI = (() => {
 
   // メッセージを出してから選択肢
   async function ask(text, opts, o = {}) {
-    if (text) await typeText(fmt(text));
+    if (text) await typeText(fmt(tr(text)));
     return choose(opts, o);
   }
 
   function showPanel(html) {
     return new Promise(resolve => {
-      panel.innerHTML = fmt(html) + '<div class="close">― Aボタン / クリックで とじる ―</div>';
+      panel.innerHTML = fmt(html) + `<div class="close">${tr('― Aボタン / クリックで とじる ―')}</div>`;
       panel.classList.remove('hidden');
       panel.scrollTop = 0;
       let ready = false;

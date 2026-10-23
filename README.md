@@ -19,6 +19,15 @@ npx http-server -p 8080 .
 | はなす・しらべる・決定 | Z / Enter / Space | A |
 | メニュー・キャンセル | X / Esc | B |
 
+## 表示言語（日本語 / English）
+
+端末やブラウザの言語が日本語なら日本語、それ以外なら英語で表示します（英語版のタイトルは「Run for Governor!」）。タイトル画面の「🌐 English / 🌐 日本語」でいつでも切り替えられ、選んだ言語は次回も使われます。
+
+- ゲーム中の文章は日本語のままコードに書き、英語は `js/i18n-en.js` の翻訳表（日本語の文 → 英語の文）から引きます。数や名前が入る文は `tr('聴衆は {n}人ほど あつまっている。', { n })` のように `{名前}` の形で書きます（`{N}` はプレイヤー名）。
+- タイトル画面などの固定の文言と、プライバシーポリシーの URL（英語は https://techgym.jp/privacy-policy-en/ ）は `js/i18n.js` にあります。
+- 文章を追加・変更したら `node scripts/check-i18n.js` を実行してください。英語の訳がない文と、`{}` の食い違いを一覧にします。
+- Android のアプリ名も、端末が英語なら「Run for Governor!」になります（`android/app/src/main/res/values-en/strings.xml`）。
+
 ## ゲームの流れ
 
 - **選挙運動（1〜17日目）**：毎日 8:00〜20:00 に活動できます。1歩で1分経過。20時になると1日が終わり、夜のニュースと情勢が届きます。
@@ -164,6 +173,8 @@ js/bgm.js       ファミコン風BGM（曲データとシーケンサー）
 js/events.js    団体・演説・ランダムイベント・遅延イベント・予定イベント・施設
 js/election.js  支持率モデル・世論調査・開票速報・エンディング
 js/engine.js    ゲーム状態・移動・描画・1日の流れ・タイトル
+js/i18n.js      表示言語の切り替えと、画面の固定文言（日本語 / 英語）
+js/i18n-en.js   英語の翻訳表（日本語の文 → 英語の文）
 js/native.js    Android アプリとの連携（戻るボタン・アプリ切替・シェア・バージョン表示）
 js/ads.js       Google AdMob 広告（Android アプリのみ）
 js/ads-config.js  広告のモード（test / production。ビルド時に生成）
@@ -171,7 +182,7 @@ js/build-info.js  タイトル画面に出すバージョン（ビルド時に�
 css/fonts/      DotGothic16 フォント（SIL OFL 1.1）
 assets/         アイコンと起動画面の元画像
 android/        Android アプリのプロジェクト（Capacitor）
-scripts/        Android に同梱する Web ファイルを www/ にまとめるスクリプト
+scripts/        www/ にまとめるビルドスクリプトと、英語の訳もれチェック（check-i18n.js）
 docs/           APK ダウンロード用 QR コード・ストア用アイコン
 ```
 

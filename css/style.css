@@ -290,3 +290,7 @@ body.native #pad { display: flex; }
 .ab button small { font-size: 10px; margin-top: 3px; }
 #pad .ab .a { background: #8a1f1f; margin-bottom: 30px; }
 #pad .ab .b { background: #1f3a8a; }
+
+/* 英語は文が長いので、選択肢は折り返す */
+html[lang="en"] #choice .item { white-space: normal; }
+html[lang="en"] #title h1 { font-size: 9cqw; letter-spacing: 0.3cqw; }

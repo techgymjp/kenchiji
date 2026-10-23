@@ -5,6 +5,7 @@ const RIVALS = {
   g: { name: '権田 剛造', short: '権田', desc: '現職・4選をめざす（68）', cls: 'c-g' },
   a: { name: '新井 ひかり', short: '新井', desc: '新人・元アナウンサー（41）', cls: 'c-a' },
 };
+Object.values(RIVALS).forEach(r => I18N.localize(r, ['name', 'short', 'desc']));
 
 const INITIAL_SUPPORT = {
   chuo:     { p: 16, g: 46, a: 34 },
@@ -15,7 +16,19 @@ const INITIAL_SUPPORT = {
 };
 
 function candName(k) { return k === 'p' ? G.name : RIVALS[k].name; }
-function candShort(k) { return k === 'p' ? G.name.split(/\s|　/)[0] : RIVALS[k].short; }
+// 名字（日本語は先頭、英語は末尾の語）
+function candShort(k) {
+  if (k !== 'p') return RIVALS[k].short;
+  const w = G.name.split(/\s|　/).filter(Boolean);
+  return (I18N.lang === 'en' ? w[w.length - 1] : w[0]) || G.name;
+}
+
+// 開票速報の時刻
+function clockStr(hh, mm) {
+  const m = String(mm).padStart(2, '0');
+  if (I18N.lang === 'en') return `${hh % 12 || 12}:${m} ${hh % 24 < 12 ? 'AM' : 'PM'}`;
+  return `${hh >= 24 ? '午前' + (hh - 24) : '午後' + (hh - 12)}時${m}分`;
+}
 function candCls(k) { return k === 'p' ? 'c-p' : RIVALS[k].cls; }
 
 function fameMult() { return 0.5 + 0.5 * Math.min(100, G.fame) / 100; }
@@ -60,10 +73,10 @@ function barHtml(sh, undecided = 0) {
 
 // 陣営の情勢分析（ノイズあり）
 function situationHtml() {
-  const label = d => (d > 0.08 ? '<span class="good">優勢</span>' : d > 0.02 ? '<span class="good">やや優勢</span>'
-    : d > -0.02 ? '接戦' : d > -0.08 ? '<span class="bad">やや劣勢</span>' : '<span class="bad">劣勢</span>');
-  let h = '<h2>じょうせい（陣営の 独自分析）</h2>';
-  h += `<p><span class="c-p">■ ${G.name}</span>　<span class="c-g">■ 権田</span>　<span class="c-a">■ 新井</span></p>`;
+  const label = d => (d > 0.08 ? `<span class="good">${tr('優勢')}</span>` : d > 0.02 ? `<span class="good">${tr('やや優勢')}</span>`
+    : d > -0.02 ? tr('接戦') : d > -0.08 ? `<span class="bad">${tr('やや劣勢')}</span>` : `<span class="bad">${tr('劣勢')}</span>`);
+  let h = `<h2>${tr('じょうせい（陣営の 独自分析）')}</h2>`;
+  h += `<p><span class="c-p">■ ${G.name}</span>　<span class="c-g">■ ${RIVALS.g.short}</span>　<span class="c-a">■ ${RIVALS.a.short}</span></p>`;
   AREA_IDS.forEach(id => {
     const s = shareOf(id);
     const n = () => (Math.random() - 0.5) * 0.04;
@@ -71,12 +84,13 @@ function situationHtml() {
     const t = sh.p + sh.g + sh.a;
     sh.p /= t; sh.g /= t; sh.a /= t;
     const top = Math.max(sh.g, sh.a);
-    h += `<p>${AREAS[id].name}（有権者 ${(AREAS[id].voters / 10000).toFixed(0)}万人）　${label(sh.p - top)}</p>${barHtml(sh)}`;
+    const voters = I18N.lang === 'en' ? (AREAS[id].voters / 1000).toFixed(0) + 'k' : (AREAS[id].voters / 10000).toFixed(0) + '万';
+    h += `<p>${tr('{a}（有権者 {v}人）', { a: AREAS[id].name, v: voters })}　${label(sh.p - top)}</p>${barHtml(sh)}`;
   });
   const ov = overallShare();
   const top = Math.max(ov.g, ov.a);
-  h += `<h3>県全体　${label(ov.p - top + (Math.random() - 0.5) * 0.02)}</h3>${barHtml(ov)}`;
-  h += `<p class="dim">知名度 ${Math.round(G.fame)}　※知名度が低いと 支持が 票に 結びつきにくい</p>`;
+  h += `<h3>${tr('県全体')}　${label(ov.p - top + (Math.random() - 0.5) * 0.02)}</h3>${barHtml(ov)}`;
+  h += `<p class="dim">${tr('知名度 {n}　※知名度が低いと 支持が 票に 結びつきにくい', { n: Math.round(G.fame) })}</p>`;
   return h;
 }
 
@@ -87,12 +101,13 @@ function pollHtml() {
   const r = k => Math.round(ov[k] * (1 - und) * 100 + (Math.random() - 0.5) * 3);
   const vals = { p: r('p'), g: r('g'), a: r('a') };
   const order = ['p', 'g', 'a'].sort((x, y) => vals[y] - vals[x]);
+  const names = { a: candShort(order[0]), b: candShort(order[1]) };
   const head = vals[order[0]] - vals[order[1]] >= 6
-    ? `${candShort(order[0])}氏が リード、${candShort(order[1])}氏 追う`
-    : `${candShort(order[0])}氏と ${candShort(order[1])}氏が 激しく競る`;
-  return `<div class="news"><b>ひなた新聞 世論調査</b>${head}<br>` +
+    ? tr('{a}氏が リード、{b}氏 追う', names)
+    : tr('{a}氏と {b}氏が 激しく競る', names);
+  return `<div class="news"><b>${tr('ひなた新聞 世論調査')}</b>${head}<br>` +
     order.map(k => `<span class="${candCls(k)}">■</span> ${candName(k)}　${vals[k]}%`).join('<br>') +
-    `<br>態度未定　${Math.round(und * 100)}%</div>`;
+    `<br>${tr('態度未定')}　${Math.round(und * 100)}%</div>`;
 }
 
 // ===================== 開票 =====================
@@ -139,17 +154,18 @@ async function electionNight() {
   const panel = document.getElementById('panel');
   panel.classList.remove('hidden');
   const fmtN = n => n.toLocaleString('ja-JP');
+  const decided = k => tr('{c}　当選確実', { c: candName(k) });
   const render = (counted, timeStr, rate, flash) => {
     const tot = { p: 0, g: 0, a: 0 };
     AREA_IDS.forEach(id => ['p', 'g', 'a'].forEach(k => { tot[k] += counted[id][k]; }));
     const order = ['p', 'g', 'a'].sort((x, y) => tot[y] - tot[x]);
-    let h = `<h2>HTV 開票速報　ひなた県知事選挙　<span class="dim">${timeStr}</span></h2>`;
-    h += `<p>開票率 <b>${rate}%</b>　投票率 ${(R.turnout * 100).toFixed(1)}%</p><table>`;
+    let h = `<h2>${tr('HTV 開票速報　ひなた県知事選挙')}　<span class="dim">${timeStr}</span></h2>`;
+    h += `<p>${tr('開票率 <b>{r}%</b>　投票率 {t}%', { r: rate, t: (R.turnout * 100).toFixed(1) })}</p><table>`;
     order.forEach(k => {
-      const mark = G.decided === k ? '<span class="bad">当確</span> ' : '';
-      h += `<tr><td>${mark}<span class="${candCls(k)}">■ ${candName(k)}</span></td><td style="text-align:right">${fmtN(tot[k])} 票</td></tr>`;
+      const mark = G.decided === k ? `<span class="bad">${tr('当確')}</span> ` : '';
+      h += `<tr><td>${mark}<span class="${candCls(k)}">■ ${candName(k)}</span></td><td style="text-align:right">${tr('{n} 票', { n: fmtN(tot[k]) })}</td></tr>`;
     });
-    h += '</table><h3>地区別</h3><table>';
+    h += `</table><h3>${tr('地区別')}</h3><table>`;
     AREA_IDS.forEach(id => {
       const c = counted[id];
       h += `<tr><td>${AREAS[id].name}</td><td class="c-p">${fmtN(c.p)}</td><td class="c-g">${fmtN(c.g)}</td><td class="c-a">${fmtN(c.a)}</td></tr>`;
@@ -161,15 +177,15 @@ async function electionNight() {
   const zero = () => { const c = {}; AREA_IDS.forEach(id => { c[id] = { p: 0, g: 0, a: 0 }; }); return c; };
   G.decided = null;
 
-  render(zero(), '午後8時00分', 0);
+  render(zero(), clockStr(20, 0), 0);
   await UI.sleep(1500);
 
   if (lead >= 0.07) {
     G.decided = winner;
-    render(zero(), '午後8時00分', 0, `速報　${candName(winner)}氏　当選確実`);
+    render(zero(), clockStr(20, 0), 0, tr('速報　{c}氏　当選確実', { c: candName(winner) }));
     BGM.stop();
     Sound.encounter();
-    await UI.showBanner(`${candName(winner)}　当選確実`, 2600);
+    await UI.showBanner(decided(winner), 2600);
     await UI.sleep(400);
   } else {
     const speed = { aoba: 1.6, yukemuri: 1.4, minato: 1.15, sakura: 0.95, chuo: 0.8 };
@@ -192,16 +208,16 @@ async function electionNight() {
       const rate = Math.min(100, Math.round(cnt / R.all * 100));
       const mins = 20 * 60 + 30 + k * 15;
       const hh = Math.floor(mins / 60), mm = mins % 60;
-      const timeStr = `${hh >= 24 ? '午前' + (hh - 24) : '午後' + (hh - 12)}時${String(mm).padStart(2, '0')}分`;
+      const timeStr = clockStr(hh, mm);
       const done = AREA_IDS.every(id => Math.min(1, (k - delay[id]) * 0.07 * speed[id]) >= 1);
       const fr = cnt / R.all;
       if (!G.decided && (done || (fr > 0.08 && lead > 0.12 * Math.pow(1 - fr, 1.1)))) {
         G.decided = winner;
         render(done ? (() => { const c = {}; AREA_IDS.forEach(id => { c[id] = Object.assign({}, R.areas[id]); }); return c; })() : counted,
-          timeStr, done ? 100 : rate, `速報　${candName(winner)}氏　当選確実`);
+          timeStr, done ? 100 : rate, tr('速報　{c}氏　当選確実', { c: candName(winner) }));
         BGM.stop();
         Sound.encounter();
-        await UI.showBanner(`${candName(winner)}　当選確実`, 2600);
+        await UI.showBanner(decided(winner), 2600);
         break;
       }
       render(counted, timeStr, rate);
@@ -250,30 +266,30 @@ async function ending(R) {
     const w = R.order[0];
     await UI.say(
       '事務所は 静まりかえった…',
-      `${candName(w)}氏の 事務所から 歓声が 聞こえてくる。`,
+      tr('{c}氏の 事務所から 歓声が 聞こえてくる。', { c: candName(w) }),
       '{N}は 支持者の前に 立ち、深々と 頭を 下げた。',
       '{N}「私の 力不足です。…ですが、この17日間で 出会った 皆さんの 声は 決して 忘れません」',
       '支持者「{N}さーん！ 次こそ！」'
     );
   }
   UI.closeMsg();
-  const rank = endingRank(R);
+  const rank = tr(endingRank(R));
   const pct = k => (R.totals[k] / R.all * 100).toFixed(1);
   const endorsed = Object.keys(ORGS).filter(k => G.org[k].endorsed).map(k => ORGS[k].name);
-  let h = `<h2>${win ? '🎉 当選！' : '落選…'}　称号：「${rank}」</h2><table>`;
+  let h = `<h2>${tr(win ? '🎉 当選！' : '落選…')}　${tr('称号：「{r}」', { r: rank })}</h2><table>`;
   R.order.forEach((k, i) => {
-    h += `<tr><td>${i === 0 ? '当' : '　'}</td><td class="${candCls(k)}">${candName(k)}</td><td style="text-align:right">${R.totals[k].toLocaleString('ja-JP')} 票</td><td>${pct(k)}%</td></tr>`;
+    h += `<tr><td>${i === 0 ? tr('当') : '　'}</td><td class="${candCls(k)}">${candName(k)}</td><td style="text-align:right">${tr('{n} 票', { n: R.totals[k].toLocaleString('ja-JP') })}</td><td>${pct(k)}%</td></tr>`;
   });
-  h += `</table><p>投票率 ${(R.turnout * 100).toFixed(1)}%</p>`;
-  h += '<h3>選挙戦の 記録</h3>';
-  h += `<p>最終知名度 ${Math.round(G.fame)}　／　貼ったポスター ${Object.keys(G.boards).length}/${MAP.boards.length}か所　／　残り資金 ${G.money}万円</p>`;
-  h += `<p>推薦団体：${endorsed.length ? endorsed.join('、') : 'なし'}</p>`;
-  if (G.log.length) h += '<p>' + G.log.map(l => `・${l.day}日目　${l.text}`).join('<br>') + '</p>';
+  h += `</table><p>${tr('投票率 {t}%', { t: (R.turnout * 100).toFixed(1) })}</p>`;
+  h += `<h3>${tr('選挙戦の 記録')}</h3>`;
+  h += `<p>${tr('最終知名度 {f}　／　貼ったポスター {b}/{t}か所　／　残り資金 {m}', { f: Math.round(G.fame), b: Object.keys(G.boards).length, t: MAP.boards.length, m: fmtMoney(G.money) })}</p>`;
+  h += `<p>${tr('推薦団体：{o}', { o: endorsed.length ? endorsed.join(I18N.lang === 'en' ? ', ' : '、') : tr('なし') })}</p>`;
+  if (G.log.length) h += '<p>' + G.log.map(l => '・' + logLine(l)).join('<br>') + '</p>';
   await UI.showPanel(h);
   try { localStorage.removeItem('kenchiji_save'); } catch (e) { /* ignore */ }
   const text = win
-    ? `「県知事になろう」で ひなた県知事に 当選しました！ 得票率 ${pct('p')}%　称号「${rank}」 #県知事になろう`
-    : `「県知事になろう」で ひなた県知事選に 挑戦… ${R.order.indexOf('p') + 1}位（得票率 ${pct('p')}%）　称号「${rank}」 #県知事になろう`;
+    ? tr('「県知事になろう」で ひなた県知事に 当選しました！ 得票率 {p}%　称号「{r}」 #県知事になろう', { p: pct('p'), r: rank })
+    : tr('「県知事になろう」で ひなた県知事選に 挑戦… {n}位（得票率 {p}%）　称号「{r}」 #県知事になろう', { n: R.order.indexOf('p') + 1, p: pct('p'), r: rank });
   while (true) {
     const c = await UI.ask('おつかれさまでした！', ['タイトルに もどる', '結果を シェアする']);
     if (c === 0) break;

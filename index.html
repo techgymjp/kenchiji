@@ -20,14 +20,14 @@
     <div id="fade"></div>
     <div id="title">
       <div class="title-inner">
-        <div class="title-sub">ひなた県知事選挙</div>
-        <h1>県知事に<br>なろう</h1>
-        <div class="title-desc">17日間の選挙戦を かけぬけろ！</div>
+        <div class="title-sub" data-i18n="title.sub">ひなた県知事選挙</div>
+        <h1 data-i18n="title.name">県知事に<br>なろう</h1>
+        <div class="title-desc" data-i18n="title.desc">17日間の選挙戦を かけぬけろ！</div>
         <div id="titleMenu" class="win"></div>
-        <div class="title-help" id="titleHelp">移動：矢印/WASD　決定：Z/Enter/Space　メニュー：X/Esc</div>
+        <div class="title-help" id="titleHelp" data-i18n="title.help">移動：矢印/WASD　決定：Z/Enter/Space　メニュー：X/Esc</div>
         <div class="title-legal">
-          <a href="https://techgym.jp/privacy-policy/" target="_blank" rel="noopener">プライバシーポリシー</a>
-          <a href="#" id="adPrivacy" class="hidden">広告の設定</a>
+          <a href="https://techgym.jp/privacy-policy/" data-i18n-href="url.privacy" data-i18n="legal.privacy" target="_blank" rel="noopener">プライバシーポリシー</a>
+          <a href="#" id="adPrivacy" class="hidden" data-i18n="legal.adSettings">広告の設定</a>
         </div>
       </div>
       <div id="buildInfo"></div>
@@ -41,11 +41,13 @@
       <button data-k="down" class="down">▼</button>
     </div>
     <div class="ab">
-      <button data-k="b" class="b">B<small>メニュー</small></button>
-      <button data-k="a" class="a">A<small>しらべる</small></button>
+      <button data-k="b" class="b">B<small data-i18n="pad.b">メニュー</small></button>
+      <button data-k="a" class="a">A<small data-i18n="pad.a">しらべる</small></button>
     </div>
   </div>
 </div>
+<script src="js/i18n-en.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/sprites.js"></script>
 <script src="js/map.js"></script>
 <script src="js/ui.js"></script>

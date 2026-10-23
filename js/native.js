@@ -10,8 +10,9 @@ const Native = (() => {
   // アプリではキー名ではなくボタン名で案内する
   if (native) {
     document.body.classList.add('native');
-    $('titleHelp').textContent = '十字ボタン：移動　A：決定・しらべる　B：メニュー';
+    $('titleHelp').dataset.i18n = 'title.helpTouch';
   }
+  I18N.apply();
 
   // タイトル画面にビルド番号を出す
   if (window.APP_VERSION && window.APP_VERSION !== 'dev') $('buildInfo').textContent = window.APP_VERSION;
@@ -44,11 +45,11 @@ const Native = (() => {
   async function share(text) {
     const nativeShare = plugin('Share');
     if (nativeShare) {
-      try { await nativeShare.share({ title: '県知事になろう', text, dialogTitle: '結果をシェア' }); } catch (e) { /* キャンセル */ }
+      try { await nativeShare.share({ title: I18N.ui('doc.title'), text, dialogTitle: tr('結果をシェア') }); } catch (e) { /* キャンセル */ }
       return 'shared';
     }
     if (navigator.share) {
-      try { await navigator.share({ title: '県知事になろう', text }); } catch (e) { /* キャンセル */ }
+      try { await navigator.share({ title: I18N.ui('doc.title'), text }); } catch (e) { /* キャンセル */ }
       return 'shared';
     }
     try {
