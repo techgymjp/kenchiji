@@ -3,13 +3,33 @@
 
 let G = null;
 const SAVE_KEY = 'kenchiji_save';
-const VIEW_W = 17, VIEW_H = 13;
+let VIEW_W = 17;
+const VIEW_H = 13;
 const DAY_START = 8 * 60, DAY_END = 20 * 60;
 const LAST_DAY = 17;
 
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 ctx.imageSmoothingEnabled = false;
+
+// 画面の向き：アプリやスマホの横画面では、左右に操作ボタンを置き、ゲーム画面を横に広げる
+function layout() {
+  const touch = document.body.classList.contains('native') || matchMedia('(pointer: coarse)').matches;
+  document.body.classList.toggle('land', touch && innerWidth > innerHeight);
+  const screen = document.getElementById('screen');
+  const aspect = document.body.classList.contains('land') && screen.clientHeight
+    ? screen.clientWidth / screen.clientHeight : 272 / 208;
+  const w = Math.max(208, Math.min(480, Math.round(208 * aspect / 2) * 2));
+  if (cv.width !== w) {
+    cv.width = w;
+    ctx.imageSmoothingEnabled = false;
+  }
+  VIEW_W = Math.ceil(w / TS);
+}
+window.addEventListener('resize', layout);
+window.addEventListener('orientationchange', () => setTimeout(layout, 200));
+// バナー広告の高さが変わったとき（画面が縮む）にも合わせる
+new ResizeObserver(layout).observe(document.getElementById('screen'));
 
 // ===================== 状態 =====================
 function freshDaily() {
