@@ -97,13 +97,19 @@ const Ads = (() => {
   }
 
   // 全画面広告を表示し、閉じられたら resolve する（読み込めていないときは出さずにすぐ resolve）
-  function showInterstitial() {
-    if (!AdMob || !ready || !slots.inter.loaded || showing) return Promise.resolve();
+  // waitMs を指定すると、まだ読み込めていないときに その時間だけ読み込みを待つ（起動直後など）
+  async function showInterstitial(waitMs = 0) {
+    if (!AdMob || showing) return;
+    if (waitMs) {
+      await initDone;
+      await ensureLoaded('inter', waitMs);
+    }
+    if (!ready || !slots.inter.loaded || showing) return;
     showing = true; slots.inter.loaded = false;
     Sound.suspend();
     return new Promise(resolve => {
       waiters.inter = () => { prepare('inter'); resolve(); };
-      AdMob.showInterstitial().catch(() => finish('inter'));
+      try { AdMob.showInterstitial().catch(() => finish('inter')); } catch (e) { finish('inter'); }
     });
   }
 
@@ -116,7 +122,7 @@ const Ads = (() => {
     Sound.suspend();
     return new Promise(resolve => {
       waiters.reward = ok => { prepare('reward'); resolve(ok ? 'rewarded' : 'skipped'); };
-      AdMob.showRewardVideoAd().catch(() => finish('reward', false));
+      try { AdMob.showRewardVideoAd().catch(() => finish('reward', false)); } catch (e) { finish('reward', false); }
     });
   }
 

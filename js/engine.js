@@ -177,7 +177,10 @@ async function runEvent(fn) {
   }
   UI.closeMsg();
   updateStatus();
-  if (G.scene === 'field') BGM.play(fieldTrack());
+  if (G.scene === 'field') {
+    BGM.play(fieldTrack());
+    save(); // 出来事・施設・メニューのたびに自動でセーブ
+  }
   running = false;
 }
 
@@ -452,6 +455,7 @@ function update(dt) {
 function onStep() {
   G.min += 1;
   G.steps++;
+  if (G.steps % 10 === 0) save(); // 歩いているあいだも ときどき自動でセーブ
   G.stepsSinceEnc++;
   if (G.steps % 12 === 0) G.hp = Math.max(0, G.hp - 1);
   updateStatus();
@@ -550,25 +554,23 @@ async function examine() {
 async function commandMenu() {
   while (true) {
     const c = await UI.choose([
-      'いどう（選挙カー）', 'つよさ', 'じょうせい', 'にってい', 'てちょう', 'セーブ', tr(Sound.on ? 'おと：ON' : 'おと：OFF'), 'タイトルに もどる', 'とじる',
+      'いどう（選挙カー）', 'つよさ', 'じょうせい', 'にってい', 'てちょう', tr(Sound.on ? 'おと：ON' : 'おと：OFF'), 'トップへ', 'とじる',
     ], { cancel: true, pos: 'left top', title: 'コマンド' });
-    if (c < 0 || c === 8) return;
+    if (c < 0 || c === 7) return;
     if (c === 0) { if (await carMove()) return; }
     else if (c === 1) await UI.showPanel(statusHtml());
     else if (c === 2) await UI.showPanel(situationHtml());
     else if (c === 3) await UI.showPanel(scheduleHtml());
     else if (c === 4) await UI.showPanel(logHtml());
-    else if (c === 5) { await UI.say(save() ? 'セーブしました。' : 'セーブできませんでした…'); UI.closeMsg(); }
-    else if (c === 6) Sound.toggle();
-    else if (c === 7) {
-      const y = await UI.ask('セーブして タイトルに もどりますか？\n（「つづきから」で 今の状態から 再開できます）', ['もどる', 'やめる'], { cancel: true });
+    else if (c === 5) Sound.toggle();
+    else if (c === 6) {
+      // 自動でセーブしてからタイトルへ（「つづきから」で同じところから再開できる）。アプリでは全画面広告を出す
+      save();
       UI.closeMsg();
-      if (y === 0) {
-        save();
-        await UI.fadeOut();
-        location.reload();
-        return;
-      }
+      await UI.fadeOut();
+      if (Ads.available) await Ads.showInterstitial(3000);
+      location.reload();
+      return;
     }
   }
 }
@@ -890,6 +892,8 @@ async function startFromSave(saved) {
 async function beginField() {
   P.reset();
   await UI.fadeOut();
+  // タイトルからプレイ画面に行くときは、アプリでは毎回 全画面広告を出す
+  if (Ads.available) await Ads.showInterstitial(3000);
   titleEl.classList.add('hidden');
   statusEl.classList.remove('hidden');
   areaEl.classList.remove('hidden');

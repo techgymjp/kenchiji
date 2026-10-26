@@ -271,7 +271,9 @@ body.native #pad { display: flex; }
 body.land #game {
   flex-direction: row;
   gap: 0;
-  padding: 0 max(8px, env(safe-area-inset-right)) var(--banner-h, 0px) max(8px, env(safe-area-inset-left));
+  /* 左右は同じ幅だけ空ける（カメラの切り欠きがある側に合わせる）。画面の真ん中にそろえ、下のバナー広告と中心をそろえるため */
+  --side: max(8px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  padding: 0 var(--side) var(--banner-h, 0px) var(--side);
 }
 body.land #pad { display: contents; }
 body.land .dpad { order: -1; flex: 0 0 auto; margin-right: 10px; }
