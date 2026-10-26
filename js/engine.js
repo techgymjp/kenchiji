@@ -559,9 +559,9 @@ async function commandMenu() {
 async function commandMenuLoop() {
   while (true) {
     const c = await UI.choose([
-      'いどう（選挙カー）', 'つよさ', 'じょうせい', 'にってい', 'てちょう', 'セーブ', tr(Sound.on ? 'おと：ON' : 'おと：OFF'), 'とじる',
+      'いどう（選挙カー）', 'つよさ', 'じょうせい', 'にってい', 'てちょう', 'セーブ', tr(Sound.on ? 'おと：ON' : 'おと：OFF'), 'タイトルに もどる', 'とじる',
     ], { cancel: true, pos: 'left top', title: 'コマンド' });
-    if (c < 0 || c === 7) return;
+    if (c < 0 || c === 8) return;
     if (c === 0) { if (await carMove()) return; }
     else if (c === 1) await UI.showPanel(statusHtml());
     else if (c === 2) await UI.showPanel(situationHtml());
@@ -569,6 +569,16 @@ async function commandMenuLoop() {
     else if (c === 4) await UI.showPanel(logHtml());
     else if (c === 5) { await UI.say(save() ? 'セーブしました。' : 'セーブできませんでした…'); UI.closeMsg(); }
     else if (c === 6) Sound.toggle();
+    else if (c === 7) {
+      const y = await UI.ask('セーブして タイトルに もどりますか？\n（「つづきから」で 今の状態から 再開できます）', ['もどる', 'やめる'], { cancel: true });
+      UI.closeMsg();
+      if (y === 0) {
+        save();
+        await UI.fadeOut();
+        location.reload();
+        return;
+      }
+    }
   }
 }
 

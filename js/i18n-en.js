@@ -1210,4 +1210,6 @@ const EN = {
   "メニューの 「いどう」で 選挙カーに 乗れば 各地区へ すぐ 移動できる。": "Use MOVE in the menu to ride the campaign car and get to any area fast.",
   "投票日の夜は 開票速報。だれかに 「当選確実」が 出たら 決着だ！": "Election night brings the returns. Once someone is projected the winner, it's over!",
   "選挙戦の すすめかた": "Running Your Campaign",
+  "セーブして タイトルに もどりますか？\n（「つづきから」で 今の状態から 再開できます）": "Save and return to the title screen?\n(Choose Continue to pick up right where you left off.)",
+  "もどる": "Return",
 };
