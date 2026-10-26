@@ -930,9 +930,9 @@ const FACILITIES = {
     while (true) {
       const opts = ['ひと休みする（1時間）', 'ポスターを 印刷する（50万円で20枚）', 'スタッフに 相談する', '今日の 活動を 終える', '出る'];
       // Android アプリでは 1日1回、応援動画（リワード広告）で体力を全回復できる
-      if (Ads.available) opts.splice(4, 0, { label: '応援動画を 見る（広告・体力 全回復）', disabled: !!G.daily.adRest });
+      if (Ads.rewardedAvailable) opts.splice(4, 0, { label: '応援動画を 見る（広告・体力 全回復）', disabled: !!G.daily.adRest });
       const c = await X.ask(null, opts, { cancel: true });
-      if (c === 4 && Ads.available) {
+      if (c === 4 && Ads.rewardedAvailable) {
         const r = await Ads.showRewarded();
         if (r === 'rewarded') {
           G.daily.adRest = true;

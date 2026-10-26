@@ -285,6 +285,7 @@ async function ending(R) {
   h += `<p>${tr('最終知名度 {f}　／　貼ったポスター {b}/{t}か所　／　残り資金 {m}', { f: Math.round(G.fame), b: Object.keys(G.boards).length, t: MAP.boards.length, m: fmtMoney(G.money) })}</p>`;
   h += `<p>${tr('推薦団体：{o}', { o: endorsed.length ? endorsed.join(I18N.lang === 'en' ? ', ' : '、') : tr('なし') })}</p>`;
   if (G.log.length) h += '<p>' + G.log.map(l => '・' + logLine(l)).join('<br>') + '</p>';
+  Ads.showBanner();
   await UI.showPanel(h);
   try { localStorage.removeItem('kenchiji_save'); } catch (e) { /* ignore */ }
   const text = win

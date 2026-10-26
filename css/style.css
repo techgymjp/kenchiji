@@ -135,6 +135,7 @@ html, body {
 #choice .ttl { color: var(--accent); margin-bottom: 0.4cqw; font-size: 2.6cqw; }
 
 #panel {
+  z-index: 2;
   background: #000018;
   left: 4cqw;
   right: 4cqw;
@@ -187,6 +188,7 @@ html, body {
 
 #fade {
   position: absolute;
+  z-index: 3;
   inset: 0;
   background: #000;
   opacity: 0;
@@ -198,6 +200,7 @@ html, body {
 
 #title {
   position: absolute;
+  z-index: 1;
   inset: 0;
   display: flex;
   align-items: center;
@@ -252,6 +255,9 @@ html, body {
 }
 /* Android アプリでは常にタッチ操作のボタンを出す */
 body.native { --pad-h: 170px; }
+/* バナー広告（画面の下）のぶん、ゲーム画面を上に詰める */
+body.native #game { padding-bottom: var(--banner-h, 0px); }
+body.native #screen { width: min(100vw, 960px, calc((100vh - var(--pad-h, 0px) - var(--banner-h, 0px)) * 272 / 208)); }
 body.native #pad { display: flex; }
 @media (pointer: coarse) {
   :root { --pad-h: 170px; }

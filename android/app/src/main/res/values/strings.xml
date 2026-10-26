@@ -4,6 +4,6 @@
     <string name="title_activity_main">県知事になろう</string>
     <string name="package_name">jp.techgym.kenchiji</string>
     <string name="custom_url_scheme">jp.techgym.kenchiji</string>
-    <!-- AdMob のアプリ ID。本番の ID をもらうまでは Google 公式のサンプル ID（テスト用）を入れておく -->
-    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+    <!-- AdMob のアプリ ID（県知事になろう） -->
+    <string name="admob_app_id">ca-app-pub-6411535997477460~6322449815</string>
 </resources>

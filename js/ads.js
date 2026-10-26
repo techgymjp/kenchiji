@@ -6,11 +6,13 @@ const Ads = (() => {
     test: {
       interstitial: 'ca-app-pub-3940256099942544/1033173712',
       rewarded: 'ca-app-pub-3940256099942544/5224354917',
+      banner: 'ca-app-pub-3940256099942544/6300978111',
     },
-    // 県知事になろう 用の本番の広告ユニット（AdMob で作成したら入れる。空のあいだは本番ビルドでも広告を出さない）
+    // 県知事になろう 用の本番の広告ユニット（空の種類は、本番ビルドではその広告を出さない）
     production: {
-      interstitial: '',
-      rewarded: '',
+      interstitial: 'ca-app-pub-6411535997477460/9655190166',
+      rewarded: 'ca-app-pub-6411535997477460/5719192465',
+      banner: 'ca-app-pub-6411535997477460/8955729897',
     },
   };
   const RETRY_MS = 20000;      // 読み込みに失敗したら少し待って再挑戦する
@@ -76,6 +78,11 @@ const Ads = (() => {
       ready = true;
     }
     let rewarded = false;
+    // バナーの高さぶん、画面の下を空けて操作ボタンと重ならないようにする（一度出したら空けたままにして、画面がずれないようにする）
+    AdMob.addListener('bannerAdSizeChanged', s => {
+      if (s && s.height > 0) document.documentElement.style.setProperty('--banner-h', Math.ceil(s.height) + 'px');
+    });
+    AdMob.addListener('bannerAdFailedToLoad', () => { banner = 'none'; });
     AdMob.addListener('interstitialAdDismissed', () => finish('inter'));
     AdMob.addListener('interstitialAdFailedToShow', () => finish('inter'));
     AdMob.addListener('onRewardedVideoAdShowed', () => { rewarded = false; });
@@ -83,7 +90,7 @@ const Ads = (() => {
     AdMob.addListener('onRewardedVideoAdDismissed', () => finish('reward', rewarded));
     AdMob.addListener('onRewardedVideoAdFailedToShow', () => finish('reward', false));
     prepare('inter');
-    prepare('reward');
+    if (ids.rewarded) prepare('reward');
   }
 
   // 全画面広告を表示し、閉じられたら resolve する（読み込めていないときは出さずにすぐ resolve）
@@ -99,7 +106,7 @@ const Ads = (() => {
 
   // リワード広告を表示する。結果は 'rewarded'（最後まで見た）/ 'skipped'（途中で閉じた）/ 'unavailable'（読み込めなかった）
   async function showRewarded() {
-    if (!AdMob || showing) return 'unavailable';
+    if (!AdMob || !ids.rewarded || showing) return 'unavailable';
     await initDone;
     if (!ready || !(await ensureLoaded('reward', 8000))) return 'unavailable';
     showing = true; slots.reward.loaded = false;
@@ -108,6 +115,35 @@ const Ads = (() => {
       waiters.reward = ok => { prepare('reward'); resolve(ok ? 'rewarded' : 'skipped'); };
       AdMob.showRewardVideoAd().catch(() => finish('reward', false));
     });
+  }
+
+  // バナー（画面の下）。タイトル・メニュー（ポーズ）・あそびかた・結果画面で出す
+  let banner = 'none';   // none / loading / shown / hidden
+  let bannerWanted = false;
+  async function showBanner() {
+    bannerWanted = true;
+    if (!AdMob || !ids.banner) return;
+    await initDone;
+    if (!ready || !bannerWanted) return;
+    if (banner === 'hidden') {
+      banner = 'shown';
+      AdMob.resumeBanner().catch(() => { banner = 'none'; });
+    } else if (banner === 'none') {
+      banner = 'loading';
+      try {
+        await AdMob.showBanner({ adId: ids.banner, adSize: 'ADAPTIVE_BANNER', position: 'BOTTOM_CENTER', margin: 0, isTesting: testing });
+        banner = 'shown';
+        if (!bannerWanted) hideBanner();
+      } catch (e) {
+        banner = 'none';
+      }
+    }
+  }
+  function hideBanner() {
+    bannerWanted = false;
+    if (!AdMob || banner !== 'shown') return;
+    banner = 'hidden';
+    AdMob.hideBanner().catch(() => {});
   }
 
   // 同意した内容をあとから変更するための Google のフォームを開く
@@ -120,6 +156,9 @@ const Ads = (() => {
 
   return {
     get available() { return !!AdMob; },
+    get rewardedAvailable() { return !!AdMob && !!ids.rewarded; },
+    showBanner,
+    hideBanner,
     get showing() { return showing; },
     get privacyOptionsRequired() { return privacyRequired; },
     initDone,

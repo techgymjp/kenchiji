@@ -177,7 +177,7 @@ async function checkDayEnd() {
     Sound.bad();
     await UI.say('{N}は ふらふらと よろめいた…', 'バタッ！', '{N}は 過労で 倒れてしまった！');
     // Android アプリでは リワード広告を見れば その日の活動を続けられる（1日1回）
-    if (Ads.available && !G.daily.revived) {
+    if (Ads.rewardedAvailable && !G.daily.revived) {
       const c = await UI.ask('スタッフ「{N}さん！ 支援者からの 応援動画が 届いてます！ 見ますか？」', ['応援動画を 見て 立ちあがる（広告）', '今日は もう 休む']);
       if (c === 0) {
         const r = await Ads.showRewarded();
@@ -528,6 +528,15 @@ async function examine() {
 
 // ===================== メニュー =====================
 async function commandMenu() {
+  Ads.showBanner();
+  try {
+    await commandMenuLoop();
+  } finally {
+    Ads.hideBanner();
+  }
+}
+
+async function commandMenuLoop() {
   while (true) {
     const c = await UI.choose([
       'いどう（選挙カー）', 'つよさ', 'じょうせい', 'にってい', 'てちょう', 'セーブ', tr(Sound.on ? 'おと：ON' : 'おと：OFF'), 'とじる',
@@ -745,13 +754,13 @@ const titleMenu = document.getElementById('titleMenu');
 
 function titleScreen() {
   const saved = loadSave();
-  // 3つめは表示言語の切り替え（いまの言語ではないほうを表示する）
-  const items = [{ label: 'はじめから' }, { label: 'つづきから', disabled: !saved }, { label: '' }];
+  // 4つめは表示言語の切り替え（いまの言語ではないほうを表示する）
+  const items = [{ label: 'はじめから' }, { label: 'つづきから', disabled: !saved }, { label: 'あそびかた' }, { label: '' }];
   let sel = 0;
   const render = () => {
-    items[2].label = I18N.lang === 'ja' ? '🌐 English' : '🌐 日本語';
+    items[3].label = I18N.lang === 'ja' ? '🌐 English' : '🌐 日本語';
     titleMenu.innerHTML = items.map((o, i) =>
-      `<div class="item${i === sel ? ' sel' : ''}${o.disabled ? ' dis' : ''}" data-i="${i}">${i < 2 ? tr(o.label) : o.label}</div>`).join('');
+      `<div class="item${i === sel ? ' sel' : ''}${o.disabled ? ' dis' : ''}" data-i="${i}">${i < 3 ? tr(o.label) : o.label}</div>`).join('');
     titleMenu.querySelectorAll('.item').forEach(el => {
       el.onclick = () => { sel = +el.dataset.i; choose(); };
     });
@@ -759,12 +768,17 @@ function titleScreen() {
   const choose = () => {
     if (items[sel].disabled) { Sound.bump(); return; }
     Sound.ok();
-    if (sel === 2) {
+    if (sel === 3) {
       I18N.set(I18N.lang === 'ja' ? 'en' : 'ja');
       render();
       return;
     }
     Input.release();
+    if (sel === 2) {
+      UI.showPanel(howToHtml()).then(titleScreen);
+      return;
+    }
+    Ads.hideBanner();
     BGM.play('title');
     if (sel === 0) nameEntry();
     else startFromSave(saved);
@@ -780,6 +794,28 @@ function titleScreen() {
   });
   render();
   BGM.play('title');
+  Ads.showBanner();
+}
+
+// あそびかた（操作説明）
+function howToHtml() {
+  const touch = document.body.classList.contains('native') || matchMedia('(pointer: coarse)').matches;
+  const keys = touch
+    ? [['十字ボタン', '歩く'], ['A ボタン', 'はなす・しらべる・決定'], ['B ボタン', 'メニュー（ポーズ）・キャンセル']]
+    : [['矢印キー / WASD', '歩く'], ['Z / Enter / Space', 'はなす・しらべる・決定'], ['X / Esc', 'メニュー（ポーズ）・キャンセル']];
+  const tips = [
+    '17日間、朝8時から 夜8時まで 県内を 歩きまわって 支持を 集めよう。1歩で 1分 たつ。',
+    '演説台では 地区に 合った テーマで 演説しよう（農村なら 農林水産業、工業団地なら 経済・雇用 など）。',
+    'ポスター掲示板を しらべると ポスターを 貼れる。知名度が 低いと 支持が 票に なりにくい。',
+    '農協や 漁協などの 団体に 何度も 挨拶して 信頼度を 8割まで 上げ、推薦を お願いしよう。',
+    '歩いていると いろいろな 出来事に 出くわす。人助けは 大事だが、写真や うまい話には 注意！',
+    '体力が なくなると 倒れてしまう。温泉・病院・喫茶店・事務所で 休もう。',
+    'メニューの 「いどう」で 選挙カーに 乗れば 各地区へ すぐ 移動できる。',
+    '投票日の夜は 開票速報。だれかに 「当選確実」が 出たら 決着だ！',
+  ];
+  return `<h2>${tr('あそびかた')}</h2><h3>${tr('そうさ')}</h3><table>` +
+    keys.map(([k, v]) => `<tr><td>${tr(k)}</td><td>${tr(v)}</td></tr>`).join('') +
+    `</table><h3>${tr('選挙戦の すすめかた')}</h3><p>` + tips.map(t => '・' + tr(t)).join('<br>') + '</p>';
 }
 
 function nameEntry() {
