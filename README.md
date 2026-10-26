@@ -118,6 +118,10 @@ https://github.com/techgymjp/kenchiji/releases/latest/download/kenchiji.apk
 
 <img src="docs/apk-qr.png" alt="APK ダウンロード用 QR コード" width="180">
 
+リリースページ（バージョンや説明を見てからダウンロードする場合）: https://github.com/techgymjp/kenchiji/releases/tag/android-latest
+
+<img src="docs/release-qr.png" alt="APK リリースページの QR コード" width="180">
+
 ダウンロードした `kenchiji.apk` を開き、「提供元不明のアプリ」のインストールを許可するとインストールできます。
 動作確認用の署名鍵（`android/app/debug.keystore`）はリポジトリで固定しているので、新しいビルドもアンインストールせずに上書きインストールできます。
 （Release に載る APK はデバッグ版です。Google Play には下の手順で作る署名済み .aab を使います）
@@ -182,7 +186,7 @@ css/fonts/      DotGothic16 フォント（SIL OFL 1.1）
 assets/         アイコンと起動画面の元画像
 android/        Android アプリのプロジェクト（Capacitor）
 scripts/        www/ にまとめるビルドスクリプトと、英語の訳もれチェック（check-i18n.js）
-docs/           APK ダウンロード用 QR コード・ストア用アイコン
+docs/           APK ダウンロード用・リリースページ用の QR コード、ストア用アイコン
 ```
 
 セーブは毎朝自動で行われ、ブラウザの localStorage に保存されます（メニューから手動セーブも可能）。
