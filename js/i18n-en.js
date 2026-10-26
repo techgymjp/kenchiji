@@ -1208,4 +1208,7 @@ const EN = {
   "投票日の夜は 開票速報。だれかに 「当選確実」が 出たら 決着だ！": "Election night brings the returns. Once someone is projected the winner, it's over!",
   "選挙戦の すすめかた": "Running Your Campaign",
   "トップへ": "TITLE",
+  "はい": "Yes",
+  "いいえ": "No",
+  "セーブデータが あります。\n本当に はじめから 始めますか？": "You have saved data.\nReally start a new game?",
 };

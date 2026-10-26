@@ -775,11 +775,12 @@ function loop(now) {
 const titleEl = document.getElementById('title');
 const titleMenu = document.getElementById('titleMenu');
 
-function titleScreen() {
+// startSel：最初に ▶ を置く項目（省略時は、セーブがあれば「つづきから」）
+function titleScreen(startSel) {
   const saved = loadSave();
   // 4つめは表示言語の切り替え（いまの言語ではないほうを表示する）
   const items = [{ label: 'はじめから' }, { label: 'つづきから', disabled: !saved }, { label: 'あそびかた' }, { label: '' }];
-  let sel = 0;
+  let sel = startSel !== undefined && !items[startSel].disabled ? startSel : (saved ? 1 : 0);
   const render = () => {
     items[3].label = I18N.lang === 'ja' ? '🌐 English' : '🌐 日本語';
     titleMenu.innerHTML = items.map((o, i) =>
@@ -798,7 +799,12 @@ function titleScreen() {
     }
     Input.release();
     if (sel === 2) {
-      UI.showPanel(howToHtml()).then(titleScreen);
+      UI.showPanel(howToHtml()).then(() => titleScreen(2));
+      return;
+    }
+    // セーブがあるのに「はじめから」を選んだら、消してよいか確かめる
+    if (sel === 0 && saved) {
+      confirmNewGame();
       return;
     }
     BGM.play('title');
@@ -839,6 +845,35 @@ function howToHtml() {
   return `<h2>${tr('あそびかた')}</h2><h3>${tr('そうさ')}</h3><table>` +
     keys.map(([k, v]) => `<tr><td>${tr(k)}</td><td>${tr(v)}</td></tr>`).join('') +
     `</table><h3>${tr('選挙戦の すすめかた')}</h3><p>` + tips.map(t => '・' + tr(t)).join('<br>') + '</p>';
+}
+
+// 「はじめから」の確認（いいえ・B ボタンでタイトルに戻る）
+function confirmNewGame() {
+  const items = ['はい', 'いいえ'];
+  let sel = 1;
+  const render = () => {
+    titleMenu.innerHTML = `<div>${tr('セーブデータが あります。\n本当に はじめから 始めますか？').replace('\n', '<br>')}</div>` +
+      items.map((o, i) => `<div class="item${i === sel ? ' sel' : ''}" data-i="${i}">${tr(o)}</div>`).join('');
+    titleMenu.querySelectorAll('.item').forEach(el => {
+      el.onclick = () => { sel = +el.dataset.i; choose(); };
+    });
+  };
+  const choose = () => {
+    Input.release();
+    if (sel === 0) {
+      Sound.ok();
+      nameEntry();
+    } else {
+      Sound.cursor();
+      titleScreen(1);
+    }
+  };
+  Input.capture(k => {
+    if (k === 'up' || k === 'down') { sel = 1 - sel; Sound.cursor(); render(); }
+    else if (k === 'a') choose();
+    else if (k === 'b') { sel = 1; choose(); }
+  });
+  render();
 }
 
 function nameEntry() {
