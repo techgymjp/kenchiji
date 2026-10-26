@@ -28,7 +28,7 @@ const I18N = (() => {
     en: {
       'doc.title': 'Run for Governor!',
       'title.sub': 'Hinata Prefecture Governor Election',
-      'title.name': 'Run for<br>Governor!',
+      'title.name': 'Run for <br>Governor!',
       'title.desc': 'Survive a 17-day campaign and win the vote!',
       'title.help': 'Move: Arrows/WASD　OK: Z/Enter/Space　Menu: X/Esc',
       'title.helpTouch': 'D-pad: Move　A: OK / Talk　B: Menu',

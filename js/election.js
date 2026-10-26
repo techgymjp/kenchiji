@@ -160,6 +160,8 @@ async function electionNight() {
     AREA_IDS.forEach(id => ['p', 'g', 'a'].forEach(k => { tot[k] += counted[id][k]; }));
     const order = ['p', 'g', 'a'].sort((x, y) => tot[y] - tot[x]);
     let h = `<h2>${tr('HTV 開票速報　ひなた県知事選挙')}　<span class="dim">${timeStr}</span></h2>`;
+    // 当確の速報は見出しのすぐ下に出す（窓からはみ出して見えなくならないように）
+    if (flash) h += `<p class="bad" style="font-size:calc(4 * var(--u));text-align:center;margin:0">${flash}</p>`;
     h += `<p>${tr('開票率 <b>{r}%</b>　投票率 {t}%', { r: rate, t: (R.turnout * 100).toFixed(1) })}</p><table>`;
     order.forEach(k => {
       const mark = G.decided === k ? `<span class="bad">${tr('当確')}</span> ` : '';
@@ -171,7 +173,6 @@ async function electionNight() {
       h += `<tr><td>${AREAS[id].name}</td><td class="c-p">${fmtN(c.p)}</td><td class="c-g">${fmtN(c.g)}</td><td class="c-a">${fmtN(c.a)}</td></tr>`;
     });
     h += '</table>';
-    if (flash) h += `<p class="bad" style="font-size:4cqw;text-align:center">${flash}</p>`;
     panel.innerHTML = h;
   };
   const zero = () => { const c = {}; AREA_IDS.forEach(id => { c[id] = { p: 0, g: 0, a: 0 }; }); return c; };
