@@ -281,8 +281,8 @@ async function nightSequence() {
   }
   await UI.fadeIn();
   await UI.showPanel(h);
-  // Android アプリでは 3日に1回、夜の報告のあとに全画面広告を出す
-  if (Ads.available && G.day % 3 === 0) await Ads.showInterstitial();
+  // Android アプリでは 毎晩、夜の報告のあとに全画面広告を出す
+  if (Ads.available) await Ads.showInterstitial();
 
   if (G.day >= LAST_DAY) {
     await electionNight();
@@ -548,15 +548,6 @@ async function examine() {
 
 // ===================== メニュー =====================
 async function commandMenu() {
-  Ads.showBanner();
-  try {
-    await commandMenuLoop();
-  } finally {
-    Ads.hideBanner();
-  }
-}
-
-async function commandMenuLoop() {
   while (true) {
     const c = await UI.choose([
       'いどう（選挙カー）', 'つよさ', 'じょうせい', 'にってい', 'てちょう', 'セーブ', tr(Sound.on ? 'おと：ON' : 'おと：OFF'), 'タイトルに もどる', 'とじる',
@@ -808,7 +799,6 @@ function titleScreen() {
       UI.showPanel(howToHtml()).then(titleScreen);
       return;
     }
-    Ads.hideBanner();
     BGM.play('title');
     if (sel === 0) nameEntry();
     else startFromSave(saved);
@@ -824,6 +814,7 @@ function titleScreen() {
   });
   render();
   BGM.play('title');
+  // バナーは起動してから ずっと画面の下に出しておく（2回目以降は何もしない）
   Ads.showBanner();
 }
 

@@ -82,7 +82,10 @@ const Ads = (() => {
     AdMob.addListener('bannerAdSizeChanged', s => {
       if (s && s.height > 0) document.documentElement.style.setProperty('--banner-h', Math.ceil(s.height) + 'px');
     });
-    AdMob.addListener('bannerAdFailedToLoad', () => { banner = 'none'; });
+    AdMob.addListener('bannerAdFailedToLoad', () => {
+      banner = 'none';
+      setTimeout(showBanner, RETRY_MS);
+    });
     AdMob.addListener('interstitialAdDismissed', () => finish('inter'));
     AdMob.addListener('interstitialAdFailedToShow', () => finish('inter'));
     AdMob.addListener('onRewardedVideoAdShowed', () => { rewarded = false; });
@@ -117,33 +120,20 @@ const Ads = (() => {
     });
   }
 
-  // バナー（画面の下）。タイトル・メニュー（ポーズ）・あそびかた・結果画面で出す
-  let banner = 'none';   // none / loading / shown / hidden
-  let bannerWanted = false;
+  // バナー（画面の下）。起動してから ずっと出しておく。読み込みに失敗したら少し待って再挑戦する
+  let banner = 'none';   // none / loading / shown
   async function showBanner() {
-    bannerWanted = true;
-    if (!AdMob || !ids.banner) return;
+    if (!AdMob || !ids.banner || banner !== 'none') return;
+    banner = 'loading';
     await initDone;
-    if (!ready || !bannerWanted) return;
-    if (banner === 'hidden') {
+    if (!ready) { banner = 'none'; return; }
+    try {
+      await AdMob.showBanner({ adId: ids.banner, adSize: 'ADAPTIVE_BANNER', position: 'BOTTOM_CENTER', margin: 0, isTesting: testing });
       banner = 'shown';
-      AdMob.resumeBanner().catch(() => { banner = 'none'; });
-    } else if (banner === 'none') {
-      banner = 'loading';
-      try {
-        await AdMob.showBanner({ adId: ids.banner, adSize: 'ADAPTIVE_BANNER', position: 'BOTTOM_CENTER', margin: 0, isTesting: testing });
-        banner = 'shown';
-        if (!bannerWanted) hideBanner();
-      } catch (e) {
-        banner = 'none';
-      }
+    } catch (e) {
+      banner = 'none';
+      setTimeout(showBanner, RETRY_MS);
     }
-  }
-  function hideBanner() {
-    bannerWanted = false;
-    if (!AdMob || banner !== 'shown') return;
-    banner = 'hidden';
-    AdMob.hideBanner().catch(() => {});
   }
 
   // 同意した内容をあとから変更するための Google のフォームを開く
@@ -158,7 +148,6 @@ const Ads = (() => {
     get available() { return !!AdMob; },
     get rewardedAvailable() { return !!AdMob && !!ids.rewarded; },
     showBanner,
-    hideBanner,
     get showing() { return showing; },
     get privacyOptionsRequired() { return privacyRequired; },
     initDone,
