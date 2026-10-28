@@ -43,5 +43,5 @@ by the terms above:
 - DotGothic16 font (css/fonts/DotGothic16-Regular.ttf) — SIL Open Font License 1.1,
   Copyright 2020 The DotGothic16 Project Authors. See css/fonts/OFL.txt.
 
-The Android app also uses Capacitor and @capacitor-community/admob (MIT License), installed
+The Android and iOS apps also use Capacitor and @capacitor-community/admob (MIT License), installed
 from npm at build time.

@@ -158,6 +158,18 @@ npm run android:open   # Android Studio で開く
 
 バージョン番号（versionCode）は Actions の実行回数が自動で使われます。表示用のバージョン名は `package.json` の `version` で、タイトル画面の右下に表示されます。
 
+## iOS 版（App Store 配布用）
+
+Android 版と同じ Capacitor のプロジェクトに `ios/` を足して作っています（Swift Package Manager の構成）。Mac での作業手順は [`docs/IOS_BUILD.md`](docs/IOS_BUILD.md) にあります。
+
+- Bundle ID は `jp.techgym.kenchiji`（Android と同じ）。iPhone 専用・横画面固定・全画面表示、プレイ中は画面が暗くならない
+- 広告は Android と同じ（バナー・インタースティシャル・リワード）。iOS 用の AdMob のアプリ ID は `ios/App/App/Info.plist`、広告ユニット ID は `js/ads.js` の `UNITS.ios` にあります
+- 起動時に Google の同意確認（必要な地域だけ）のあと、トラッキングの許可（App Tracking Transparency）を確認する。説明文は日英（`ios/App/App/*.lproj/InfoPlist.strings`）
+- iPhone のホームインジケータの上にバナーが出るので、そのぶん画面の下を空けている
+- `npm run ios:sync`（テスト広告）／ `npm run ios:release`（本番広告。App Store 用）／ `npm run ios:open`（Xcode で開く）
+- GitHub Actions（`.github/workflows/ios.yml`）が push のたびに、署名なしでシミュレーター向けにビルドできるかを確認する
+- App Store 用の画像は `docs/store/ios/`（スクリーンショット 2622×1206 は `6.3inch/`、ヘッダ 3840×1646、検索結果 3840×2560）
+
 ## Web 版の公開（Vercel）
 
 `package.json` があるため、Vercel はビルドが必要なプロジェクトと判断します。`vercel.json` で `npm run build` と出力先 `www` を指定しています。
@@ -188,8 +200,9 @@ js/build-info.js  タイトル画面に出すバージョン（ビルド時に�
 css/fonts/      DotGothic16 フォント（SIL OFL 1.1）
 assets/         アイコンと起動画面の元画像
 android/        Android アプリのプロジェクト（Capacitor）
+ios/            iOS アプリのプロジェクト（Capacitor・Xcode）
 scripts/        www/ にまとめるビルドスクリプトと、英語の訳もれチェック（check-i18n.js）
-docs/           APK ダウンロード用・リリースページ用の QR コード、store/ にストア用の画像と掲載文
+docs/           APK 用の QR コード、IOS_BUILD.md（Mac での iOS の作業手順）、store/ にストア用の画像と掲載文（ios/ は App Store 用）
 ```
 
 セーブは自動です（出来事・施設・メニューのたびと、歩いているあいだ）。メニューの「トップへ」でタイトル画面に戻り、「つづきから」で同じところから再開できます。

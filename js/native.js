@@ -1,5 +1,5 @@
 'use strict';
-// Android アプリ（Capacitor）との連携。Web 版では Capacitor がないので何もしない
+// Android / iOS アプリ（Capacitor）との連携。Web 版では Capacitor がないので何もしない
 
 const Native = (() => {
   const cap = window.Capacitor;
@@ -31,7 +31,7 @@ const Native = (() => {
     }
   });
 
-  // 戻るボタン：タイトル画面ではアプリを終了、それ以外は B ボタン（メニュー・キャンセル）
+  // 戻るボタン（Android）：タイトル画面ではアプリを終了、それ以外は B ボタン（メニュー・キャンセル）。iOS では呼ばれない
   const App = plugin('App');
   if (App) {
     App.addListener('backButton', () => {
@@ -41,7 +41,7 @@ const Native = (() => {
     });
   }
 
-  // 結果のシェア：アプリでは Android の共有メニュー、Web では共有 API かクリップボード
+  // 結果のシェア：アプリでは端末の共有メニュー、Web では共有 API かクリップボード
   async function share(text) {
     const nativeShare = plugin('Share');
     if (nativeShare) {

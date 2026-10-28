@@ -1,25 +1,41 @@
 'use strict';
-// Google AdMob 広告（Android アプリのときだけ動く。Web 版では何もしない）
+// Google AdMob 広告（Android / iOS アプリのときだけ動く。Web 版では何もしない）
 const Ads = (() => {
+  // AdMob では Android と iOS を別のアプリとして登録しているので、広告ユニットも OS ごとに分かれている。
+  // test は Google 公式のテスト用広告ユニット。production の空の種類は、本番ビルドではその広告を出さない
   const UNITS = {
-    // Google 公式のテスト用広告ユニット
-    test: {
-      interstitial: 'ca-app-pub-3940256099942544/1033173712',
-      rewarded: 'ca-app-pub-3940256099942544/5224354917',
-      banner: 'ca-app-pub-3940256099942544/6300978111',
+    android: {
+      test: {
+        interstitial: 'ca-app-pub-3940256099942544/1033173712',
+        rewarded: 'ca-app-pub-3940256099942544/5224354917',
+        banner: 'ca-app-pub-3940256099942544/6300978111',
+      },
+      production: {
+        interstitial: 'ca-app-pub-6411535997477460/9655190166',
+        rewarded: 'ca-app-pub-6411535997477460/5719192465',
+        banner: 'ca-app-pub-6411535997477460/8955729897',
+      },
     },
-    // 県知事になろう 用の本番の広告ユニット（空の種類は、本番ビルドではその広告を出さない）
-    production: {
-      interstitial: 'ca-app-pub-6411535997477460/9655190166',
-      rewarded: 'ca-app-pub-6411535997477460/5719192465',
-      banner: 'ca-app-pub-6411535997477460/8955729897',
+    ios: {
+      test: {
+        interstitial: 'ca-app-pub-3940256099942544/4411468910',
+        rewarded: 'ca-app-pub-3940256099942544/1712485313',
+        banner: 'ca-app-pub-3940256099942544/2934735716',
+      },
+      // iOS 用の広告ユニットを AdMob で作ったら入れる
+      production: {
+        interstitial: '',
+        rewarded: '',
+        banner: '',
+      },
     },
   };
   const RETRY_MS = 20000;      // 読み込みに失敗したら少し待って再挑戦する
   const cap = window.Capacitor;
   const native = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
+  const platform = native && cap.getPlatform && cap.getPlatform() === 'ios' ? 'ios' : 'android';
   const testing = window.AD_MODE !== 'production';
-  const ids = testing ? UNITS.test : UNITS.production;
+  const ids = UNITS[platform][testing ? 'test' : 'production'];
   const AdMob = native && cap.Plugins && ids.interstitial ? cap.Plugins.AdMob : null;
 
   let ready = false;           // 広告をリクエストしてよい状態（初期化と同意確認が済んだ）
@@ -76,6 +92,14 @@ const Ads = (() => {
       privacyRequired = consent.privacyOptionsRequirementStatus === 'REQUIRED';
     } catch (e) {
       ready = true;
+    }
+    // iOS では、広告用の ID を使ってよいか（App Tracking Transparency）を利用者に確認する。
+    // 同意確認のあとに一度だけ出る。断られても広告は出せる（パーソナライズされないだけ）
+    if (platform === 'ios') {
+      try {
+        const { status } = await AdMob.trackingAuthorizationStatus();
+        if (status === 'notDetermined') await AdMob.requestTrackingAuthorization();
+      } catch (e) { /* ignore */ }
     }
     let rewarded = false;
     // バナーの高さぶん、画面の下を空けて操作ボタンと重ならないようにする（一度出したら空けたままにして、画面がずれないようにする）

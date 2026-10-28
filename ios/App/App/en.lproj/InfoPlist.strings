@@ -1,0 +1,4 @@
+/* ホーム画面に出すアプリ名（端末の言語が英語のとき） */
+"CFBundleDisplayName" = "Run for Governor!";
+/* App Tracking Transparency prompt */
+"NSUserTrackingUsageDescription" = "This identifier is used to show you more relevant ads. The game is free thanks to ads.";

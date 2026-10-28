@@ -259,8 +259,10 @@ html, body {
 /* Android アプリでは常にタッチ操作のボタンを出す */
 body.native { --pad-h: 170px; }
 /* バナー広告（画面の下）のぶん、ゲーム画面を上に詰める */
-body.native #game { padding-bottom: var(--banner-h, 0px); }
-body.native #screen { width: min(100vw, 960px, calc((100vh - var(--pad-h, 0px) - var(--banner-h, 0px)) * 272 / 208)); }
+/* 下に空ける高さ：バナーの高さ ＋ 画面下の安全領域（iPhone のホームインジケータ。iOS のバナーはその上に出る） */
+body.native { --bottom: calc(var(--banner-h, 0px) + env(safe-area-inset-bottom, 0px)); }
+body.native #game { padding-bottom: var(--bottom); }
+body.native #screen { width: min(100vw, 960px, calc((100vh - var(--pad-h, 0px) - var(--bottom)) * 272 / 208)); }
 body.native #pad { display: flex; }
 @media (pointer: coarse) {
   :root { --pad-h: 170px; }
@@ -273,7 +275,7 @@ body.land #game {
   gap: 0;
   /* 左右は同じ幅だけ空ける（カメラの切り欠きがある側に合わせる）。画面の真ん中にそろえ、下のバナー広告と中心をそろえるため */
   --side: max(8px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
-  padding: 0 var(--side) var(--banner-h, 0px) var(--side);
+  padding: 0 var(--side) var(--bottom, var(--banner-h, 0px)) var(--side);
 }
 body.land #pad { display: contents; }
 body.land .dpad { order: -1; flex: 0 0 auto; margin-right: 10px; }
@@ -281,8 +283,8 @@ body.land .ab { order: 1; flex: 0 0 auto; margin-left: 10px; }
 body.land #screen {
   flex: 1 1 auto;
   width: auto;
-  height: calc(100vh - var(--banner-h, 0px));
-  height: calc(100dvh - var(--banner-h, 0px));
+  height: calc(100vh - var(--bottom, var(--banner-h, 0px)));
+  height: calc(100dvh - var(--bottom, var(--banner-h, 0px)));
   aspect-ratio: auto;
 }
 /* スマホの横画面は高さが小さいので文字を 1.25 倍に（タブレットなど大きい画面では等倍のまま） */
