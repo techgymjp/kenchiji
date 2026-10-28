@@ -168,6 +168,7 @@ Android 版と同じ Capacitor のプロジェクトに `ios/` を足して作�
 - iPhone のホームインジケータの上にバナーが出るので、そのぶん画面の下を空けている
 - `npm run ios:sync`（テスト広告）／ `npm run ios:release`（本番広告。App Store 用）／ `npm run ios:open`（Xcode で開く）
 - GitHub Actions（`.github/workflows/ios.yml`）が push のたびに、署名なしでシミュレーター向けにビルドできるかを確認する
+- 既定ブランチに push すると、GitHub Actions（`.github/workflows/ios-release.yml`）が本番の広告でビルドして TestFlight にアップロードする（ビルド番号は 100 ＋ 実行回数）
 - App Store 用の画像は `docs/store/ios/`（スクリーンショット 2622×1206 は `6.3inch/`、ヘッダ 3840×1646、検索結果 3840×2560）
 
 ## Web 版の公開（Vercel）

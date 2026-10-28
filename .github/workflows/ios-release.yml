@@ -1,0 +1,194 @@
+name: iOS release (TestFlight)
+
+# 既定ブランチに push したら、本番の広告で iOS 版をビルドし、App Store Connect（TestFlight）にアップロードする。
+# 審査への提出は App Store Connect で手動で行う（docs/IOS_BUILD.md）。
+# 必要な Secrets：IOS_DIST_CERT_P12_BASE64 / IOS_DIST_CERT_PASSWORD / ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_P8_BASE64
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'css/**'
+      - 'js/**'
+      - 'ios/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/ios-release.yml'
+  workflow_dispatch:
+
+# 同時に 2 つアップロードしない（ビルド番号の取り違えを防ぐ）。古いものは取り消さず、順番に処理する
+concurrency:
+  group: ios-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # push では既定ブランチだけ。手動実行（workflow_dispatch）はどのブランチでもよい
+    if: github.event_name == 'workflow_dispatch' || github.ref_name == github.event.repository.default_branch
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      HAS_SECRETS: ${{ secrets.IOS_DIST_CERT_P12_BASE64 != '' && secrets.ASC_KEY_P8_BASE64 != '' }}
+      TEAM_ID: GNM3VTX9YG
+      BUNDLE_ID: jp.techgym.kenchiji
+      PROFILE_NAME: kenchiji App Store CI
+      RUN_NUMBER: ${{ github.run_number }}
+    steps:
+      - name: Check secrets
+        if: env.HAS_SECRETS != 'true'
+        run: |
+          echo "::error::iOS の Secrets（IOS_DIST_CERT_P12_BASE64 など 5 つ）が登録されていません。docs/IOS_BUILD.md の 8 章を見てください"
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: npm ci
+
+      - name: Set version
+        run: |
+          echo "VERSION_NAME=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
+          # Mac から手でアップロードしたビルド（1, 2, …）と番号がぶつからないよう、100 番台から始める
+          echo "BUILD_NUMBER=$((100 + RUN_NUMBER))" >> "$GITHUB_ENV"
+
+      # 本番の広告 ID でゲームのファイルを iOS のプロジェクトにコピーする（npm run ios:release と同じ）
+      - name: Copy web assets (production ads)
+        run: |
+          VERSION_CODE="$BUILD_NUMBER" ADMOB_MODE=production npm run build
+          npx cap sync ios
+
+      # 配布用の証明書を、このジョブだけのキーチェーンに入れる
+      - name: Import the distribution certificate
+        env:
+          P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/dist.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/dist.p12"
+          security find-identity -v -p codesigning "$KEYCHAIN"
+
+      - name: Write the App Store Connect API key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$KEY_PATH"
+          echo "ASC_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+          # fastlane 用（sigh で App Store 用のプロファイルを作る・取ってくる）
+          node -e "
+            const fs = require('fs');
+            fs.writeFileSync(process.env.RUNNER_TEMP + '/asc_api_key.json', JSON.stringify({
+              key_id: process.env.ASC_KEY_ID,
+              issuer_id: process.env.ASC_ISSUER_ID,
+              key: fs.readFileSync('$KEY_PATH', 'utf8'),
+              in_house: false,
+            }));
+          "
+
+      # キーチェーンの配布用証明書に合う App Store 用のプロファイルを、なければ作り、端末にインストールする
+      - name: Get the App Store provisioning profile
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          command -v fastlane > /dev/null || brew install fastlane
+          fastlane sigh \
+            --api_key_path "$RUNNER_TEMP/asc_api_key.json" \
+            --app_identifier "$BUNDLE_ID" \
+            --team_id "$TEAM_ID" \
+            --provisioning_name "$PROFILE_NAME" \
+            --output_path "$RUNNER_TEMP" \
+            --filename "appstore.mobileprovision"
+          # Xcode 16 以降はこちらの場所も見るので、念のため両方に置く
+          UUID=$(security cms -D -i "$RUNNER_TEMP/appstore.mobileprovision" | plutil -extract UUID raw -)
+          for d in "$HOME/Library/MobileDevice/Provisioning Profiles" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$d"
+            cp "$RUNNER_TEMP/appstore.mobileprovision" "$d/$UUID.mobileprovision"
+          done
+
+      # App のターゲットだけを手動署名（配布用の証明書 ＋ App Store 用のプロファイル）にする。CI の中だけの変更で、コミットはしない
+      - name: Switch the App target to manual signing
+        run: |
+          python3 - <<'PY'
+          import os, re
+          p = 'ios/App/App.xcodeproj/project.pbxproj'
+          s = open(p).read()
+          bundle = os.environ['BUNDLE_ID']
+          profile = os.environ['PROFILE_NAME']
+          def fix(m):
+              block = m.group(0)
+              if 'PRODUCT_BUNDLE_IDENTIFIER = %s;' % bundle not in block:
+                  return block
+              block = block.replace('CODE_SIGN_STYLE = Automatic;', 'CODE_SIGN_STYLE = Manual;\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";\n\t\t\t\t"PROVISIONING_PROFILE_SPECIFIER" = "%s";' % profile)
+              return block
+          s2 = re.sub(r'isa = XCBuildConfiguration;.*?name = \w+;', fix, s, flags=re.S)
+          assert s2.count('CODE_SIGN_STYLE = Manual;') == 2, 'App ターゲットの署名設定が見つからない'
+          open(p, 'w').write(s2)
+          PY
+
+      - name: Archive
+        working-directory: ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" MARKETING_VERSION="$VERSION_NAME" \
+            archive | tail -40
+
+      # 書き出しと同時に App Store Connect にアップロードする（destination = upload）
+      - name: Upload to App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key><string>${PROFILE_NAME}</string>
+            </dict>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" | tail -40
+          echo "### TestFlight にアップロードしました：v${VERSION_NAME} (build ${BUILD_NUMBER})" >> "$GITHUB_STEP_SUMMARY"
+          echo "App Store Connect の TestFlight に表示されるまで 10〜30 分ほどかかります。" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean up
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/build.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP"/AuthKey_*.p8 "$RUNNER_TEMP/asc_api_key.json"

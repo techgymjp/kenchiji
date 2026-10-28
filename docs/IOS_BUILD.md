@@ -216,7 +216,15 @@ JET STRIKE で作った API キー（.p8）と配布用の証明書（.p12）は
 | `ASC_ISSUER_ID` | Issuer ID |
 | `ASC_KEY_P8_BASE64` | API キー（.p8）を `base64 -i AuthKey_XXXXXXXXXX.p8 \| tr -d '\n' \| pbcopy` で変換した文字列 |
 
-登録が終わったら、Claude Code に「iOS の自動アップロードのワークフローを作って」と頼みます。審査への提出は、これまでどおり App Store Connect で行います。
+Secrets は登録済みです。既定ブランチに push すると、`.github/workflows/ios-release.yml` が次のことを自動で行います（Actions の「iOS release (TestFlight)」。手動で実行することもできます）。
+
+1. 本番の広告 ID でゲームのファイルを iOS のプロジェクトにコピーする（`npm run ios:release` と同じ）
+2. 配布用の証明書を読み込み、App Store 用のプロファイル（`kenchiji App Store CI`）がなければ作る（fastlane の sigh）
+3. Archive して、App Store Connect（TestFlight）にアップロードする
+
+- ビルド番号は「100 ＋ Actions の実行回数」（101, 102, …）。Mac から手でアップロードするときは 100 より小さい番号を使えば、ぶつかりません
+- アップロードが終わると、Actions の実行結果の「Summary」にバージョンとビルド番号が出ます。TestFlight に表示されるまで 10〜30 分ほどかかります
+- 審査への提出は、これまでどおり App Store Connect で行います（ビルドを選んで「審査へ提出」）
 
 **注意**：証明書（.p12）、そのパスワード、API キー（.p8）は、アップロード鍵と同じく、チャット・AI へのアップロード・リポジトリへのコミットで**絶対に共有しない**でください。
 
