@@ -11,6 +11,8 @@ const Native = (() => {
   if (native) {
     document.body.classList.add('native');
     $('titleHelp').dataset.i18n = 'title.helpTouch';
+    // アプリの中では、Google Play へのリンク（Web 版向け）を出さない
+    $('playLink').remove();
   }
   I18N.apply();
 
@@ -60,5 +62,8 @@ const Native = (() => {
     }
   }
 
-  return { native, share };
+  // Web 版だけに出す Google Play のページ
+  const PLAY_URL = 'https://play.google.com/store/apps/details?id=jp.techgym.kenchiji';
+
+  return { native, share, PLAY_URL };
 })();

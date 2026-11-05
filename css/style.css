@@ -225,7 +225,7 @@ html, body {
 .title-sub { font-size: calc(3 * var(--u)); color: #fff; letter-spacing: calc(0.6 * var(--u)); }
 .title-desc { font-size: calc(3 * var(--u)); margin-bottom: calc(3 * var(--u)); }
 .title-help { margin-top: calc(3 * var(--u)); font-size: calc(2.2 * var(--u)); color: #aaa; }
-.title-legal { margin-top: calc(1.5 * var(--u)); font-size: calc(2.2 * var(--u)); display: flex; gap: calc(3 * var(--u)); justify-content: center; }
+.title-legal { margin-top: calc(1.5 * var(--u)); font-size: calc(2.2 * var(--u)); display: flex; flex-wrap: wrap; gap: calc(0.6 * var(--u)) calc(3 * var(--u)); justify-content: center; }
 .title-legal a { color: #9ab4ff; }
 #buildInfo { position: absolute; right: calc(1.5 * var(--u)); bottom: calc(1 * var(--u)); font-size: calc(2 * var(--u)); color: #777; }
 #titleMenu {

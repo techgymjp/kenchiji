@@ -1211,4 +1211,5 @@ const EN = {
   "はい": "Yes",
   "いいえ": "No",
   "セーブデータが あります。\n本当に はじめから 始めますか？": "You have saved data.\nReally start a new game?",
+  "Android アプリ版も あります（Google Play）": "Also available as an Android app (Google Play)",
 };
