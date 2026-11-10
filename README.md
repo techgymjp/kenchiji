@@ -171,9 +171,19 @@ Android 版と同じ Capacitor のプロジェクトに `ios/` を足して作�
 - 既定ブランチに push すると、GitHub Actions（`.github/workflows/ios-release.yml`）が本番の広告でビルドして TestFlight にアップロードする（ビルド番号は 100 ＋ 実行回数）
 - App Store 用の画像は `docs/store/ios/`（スクリーンショット 2622×1206 は `6.3inch/`、ヘッダ 3840×1646、検索結果 3840×2560）
 
+## Web 版だけの部分（アプリには入れない）
+
+Web 版のタイトル画面と「あそびかた」には、Android アプリ版（Google Play）へのリンクがあります。これはアプリには**入れません**（アプリの中で隠すのではなく、バンドルから取り除く）。App Store の審査で、他社ストアへのリンクや「アプリでだけ隠す処理」が見つかると、審査中に隠した機能（Guideline 5.6）と見なされることがあるためです。
+
+- Web 版だけの部分は目印で囲む。HTML は `<!-- web-only -->` … `<!-- /web-only -->`、JS は `// web-only:start` … `// web-only:end`
+- `npm run build`：Web 版（Vercel）。目印の中も含めてそのままコピーする
+- `npm run build:app`：アプリ用（`APP_BUILD=1`）。目印の範囲を取り除き、`play.google.com` や「Google Play」が残っていたらビルドを止める
+- `android:sync` / `ios:sync` / `ios:release` と GitHub Actions のアプリのビルドは `build:app` を使う
+- 端末・日付・地域などで機能を出し分ける処理は、アプリには入れない
+
 ## Web 版の公開（Vercel）
 
-`package.json` があるため、Vercel はビルドが必要なプロジェクトと判断します。`vercel.json` で `npm run build` と出力先 `www` を指定しています。
+`package.json` があるため、Vercel はビルドが必要なプロジェクトと判断します。`vercel.json` で `npm run build`（Web 版のビルド）と出力先 `www` を指定しています。
 
 ## ライセンス
 

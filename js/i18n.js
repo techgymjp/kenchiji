@@ -21,7 +21,9 @@ const I18N = (() => {
       'title.helpTouch': '十字ボタン：移動　A：決定・しらべる　B：メニュー',
       'legal.privacy': 'プライバシーポリシー',
       'legal.adSettings': '広告の設定',
+      // web-only:start
       'legal.playStore': 'Android アプリ版（Google Play）',
+      // web-only:end
       'url.privacy': 'https://techgym.jp/privacy-policy/',
       'pad.a': 'しらべる',
       'pad.b': 'メニュー',
@@ -35,7 +37,9 @@ const I18N = (() => {
       'title.helpTouch': 'D-pad: Move　A: OK / Talk　B: Menu',
       'legal.privacy': 'Privacy Policy',
       'legal.adSettings': 'Ad Settings',
+      // web-only:start
       'legal.playStore': 'Android app (Google Play)',
+      // web-only:end
       'url.privacy': 'https://techgym.jp/privacy-policy-en/',
       'pad.a': 'TALK',
       'pad.b': 'MENU',

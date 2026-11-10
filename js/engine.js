@@ -842,11 +842,14 @@ function howToHtml() {
     'メニューの 「いどう」で 選挙カーに 乗れば 各地区へ すぐ 移動できる。',
     '投票日の夜は 開票速報。だれかに 「当選確実」が 出たら 決着だ！',
   ];
-  return `<h2>${tr('あそびかた')}</h2><h3>${tr('そうさ')}</h3><table>` +
+  let html = `<h2>${tr('あそびかた')}</h2><h3>${tr('そうさ')}</h3><table>` +
     keys.map(([k, v]) => `<tr><td>${tr(k)}</td><td>${tr(v)}</td></tr>`).join('') +
-    `</table><h3>${tr('選挙戦の すすめかた')}</h3><p>` + tips.map(t => '・' + tr(t)).join('<br>') + '</p>' +
-    // Web 版では Android アプリ版（Google Play）へのリンクも出す（新しいタブで開く）
-    (Native.native ? '' : `<p><a href="${Native.PLAY_URL}" target="_blank" rel="noopener" style="color:#9ab4ff">${tr('Android アプリ版も あります（Google Play）')}</a></p>`);
+    `</table><h3>${tr('選挙戦の すすめかた')}</h3><p>` + tips.map(t => '・' + tr(t)).join('<br>') + '</p>';
+  // web-only:start
+  // Web 版では Android アプリ版（Google Play）へのリンクも出す（新しいタブで開く）。アプリ用のビルドでは取り除かれる
+  html += `<p><a href="https://play.google.com/store/apps/details?id=jp.techgym.kenchiji" target="_blank" rel="noopener" style="color:#9ab4ff">${tr('Android アプリ版も あります（Google Play）')}</a></p>`;
+  // web-only:end
+  return html;
 }
 
 // 「はじめから」の確認（いいえ・B ボタンでタイトルに戻る）

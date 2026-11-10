@@ -65,7 +65,7 @@ jobs:
       # 本番の広告 ID でゲームのファイルを iOS のプロジェクトにコピーする（npm run ios:release と同じ）
       - name: Copy web assets (production ads)
         run: |
-          VERSION_CODE="$BUILD_NUMBER" ADMOB_MODE=production npm run build
+          VERSION_CODE="$BUILD_NUMBER" ADMOB_MODE=production npm run build:app
           npx cap sync ios
 
       # 配布用の証明書を、このジョブだけのキーチェーンに入れる
