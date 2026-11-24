@@ -244,40 +244,23 @@ TestFlight の **build 103** には、このリンクと隠す処理が入って
 
 **再提出の手順**
 
-1. 最新のビルド（3 種類の広告がすべて新しい iOS の広告ユニット ID のもの。build 110 以降）を TestFlight で iPhone に入れ、5 章の手順で操作を録画する（アプリの起動から。iPad を持っていれば iPad でも録画すると、なおよい）
-2. App Store Connect のバージョンのページで、ビルドを新しいものに差し替える
-3. 「App Review に関する情報」→「メモ」に下の返信文（3 の説明の部分）を入れる
-4. App Review からのメッセージ（リジェクトの通知）に、下の返信文と録画を送る（動画が大きいときは 5 章のとおり 720p にするか、Google ドライブの共有リンクを貼る）
-5. 「審査へ提出」し直す
+1. App Store Connect のバージョンのページで、ビルドを最新のもの（3 種類の広告がすべて新しい iOS の広告ユニット ID のもの。build 110 以降）に差し替える
+2. App Review からのメッセージ（リジェクトの通知）に、下の返信文を送る
+3. 「審査へ提出」し直す
 
-**App Review への返信文（下書き）**
+**App Review への返信文**
 
 ```
 Hello, and thank you for your review.
 
-We investigated the issue under Guideline 5.6 and found the cause. An earlier build contained
-a link to our Android version on Google Play, which is meant only for the web version of the
-game, together with code that hid that link inside the iOS app. This was a mistake in our
-build process, not an attempt to hide any functionality from App Review.
+An earlier build mistakenly included a link to our Android version on Google Play, which is
+intended only for the web version of the game, along with code that hid it in the iOS app.
+We have removed both from the app bundle entirely.
 
-We have fixed it:
-- The web-only link and the code that hid it have been removed from the app bundle entirely.
-  Our build now strips web-only content and fails if any store link remains.
-- The app has no hidden, remote-controlled, or conditional features. It does not change its
-  features by device, date, region, or any server setting. The only differences between devices
-  are screen layout and the display language (Japanese or English, following the device language).
-- The app works the same on iPhone, on iPad (compatibility mode) and on Mac with Apple silicon,
-  both during and after review.
+The app has no hidden or conditional features. It works the same during and after review,
+and on all supported devices. We have submitted a new build.
 
-A new build has been submitted. Attached is a screen recording on a physical iPhone running the
-latest iOS, starting from app launch: [録画ファイルまたは共有リンク]
-
-About the app: "Run for Governor!" (県知事になろう) is a single-player, retro pixel-art RPG about
-a fictional 17-day election campaign. No login is required. It uses Google AdMob (banner,
-interstitial and rewarded ads, with Google's consent form where required and App Tracking
-Transparency). There are no in-app purchases, user accounts, or user-generated content.
-
-Thank you for your time.
+Thank you.
 ```
 
 ## つまずきやすいところ
